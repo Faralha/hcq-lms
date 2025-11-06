@@ -26,6 +26,11 @@ import * as z from 'zod'
 import type { FormSubmitEvent, AuthFormField } from '@nuxt/ui'
 import type { LoginRequest } from '~/types/auth'
 
+definePageMeta({
+  layout: 'auth',
+  ssr: false,
+})
+
 const toast = useToast()
 const authApi = useAuthApi()
 const router = useRouter()
@@ -148,7 +153,7 @@ async function onSubmit(payload: FormSubmitEvent<Schema>) {
           console.warn('[Login] No role found, redirecting to /')
           router.push('/')
         }
-      }, 1000)
+      }, 500)
     } else {
       console.error('[Login] Missing data - accessToken:', !!accessToken, 'userData:', !!userData)
       throw new Error('Invalid response: missing user data or access token')

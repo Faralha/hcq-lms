@@ -26,6 +26,11 @@ import * as z from 'zod'
 import type { FormSubmitEvent, AuthFormField } from '@nuxt/ui'
 import type { RegisterRequest } from '~/types/auth'
 
+definePageMeta({
+  layout: 'auth',
+  ssr: false,
+})
+
 const toast = useToast()
 const authApi = useAuthApi()
 const router = useRouter()
