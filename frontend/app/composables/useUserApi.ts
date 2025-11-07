@@ -44,7 +44,7 @@ export const useUserApi = () => {
    * Get all users (Admin only)
    * GET /users
    */
-  const getAllUsers = async (): Promise<ApiResponse<User[]>> => {
+  const getAllUsers = async (): Promise<User[]> => {
     return api.get<User[]>('users')
   }
 
@@ -52,7 +52,7 @@ export const useUserApi = () => {
    * Create user (Admin only)
    * POST /users
    */
-  const createUser = async (data: CreateUserRequest): Promise<ApiResponse<User>> => {
+  const createUser = async (data: CreateUserRequest): Promise<User> => {
     return api.post<User>('users', data)
   }
 
@@ -60,7 +60,7 @@ export const useUserApi = () => {
    * Update user (Admin only)
    * PATCH /users/:id
    */
-  const updateUser = async (id: string, data: UpdateUserRequest): Promise<ApiResponse<User>> => {
+  const updateUser = async (id: string, data: UpdateUserRequest): Promise<User> => {
     return api.patch<User>(`users/${id}`, data)
   }
 
@@ -68,7 +68,7 @@ export const useUserApi = () => {
    * Delete user (Admin only)
    * DELETE /users/:id
    */
-  const deleteUser = async (id: string): Promise<ApiResponse<void>> => {
+  const deleteUser = async (id: string): Promise<void> => {
     return api.delete(`users/${id}`)
   }
 

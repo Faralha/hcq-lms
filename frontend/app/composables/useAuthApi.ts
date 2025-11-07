@@ -6,7 +6,9 @@ import type {
   LogoutResponse,
   ForgotPasswordRequest,
   ResetPasswordRequest,
-  AuthUser
+  AuthUser,
+  InvitePengajarRequest,
+  InvitePengajarResponse
 } from '~/types/auth'
 import type { ApiResponse } from '~/types/api'
 
@@ -96,9 +98,17 @@ export const useAuthApi = () => {
   /**
    * Invite pengajar (Admin only)
    * POST /v1/auth/invite-pengajar
+   * 
+   * @param email - Email address of the teacher to invite
+   * @returns Promise with invitation details including magic link
+   * 
+   * @example
+   * const { invitePengajar } = useAuthApi()
+   * const response = await invitePengajar('teacher@hcq.com')
+   * console.log(response.magicLink) // Share this link with the teacher
    */
-  const invitePengajar = async (email: string): Promise<ApiResponse<{ message: string; email: string; magicLink: string; expiresAt: string }>> => {
-    return api.post('auth/invite-pengajar', { email })
+  const invitePengajar = async (email: string): Promise<ApiResponse<InvitePengajarResponse>> => {
+    return api.post<InvitePengajarResponse>('auth/invite-pengajar', { email })
   }
 
   /**

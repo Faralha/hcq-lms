@@ -22,7 +22,6 @@
 import type { MenuItem } from '~/components/MenuSection.vue'
 
 definePageMeta({
-  layout: 'pelajar',
 })
 
 const { user } = useAuth()

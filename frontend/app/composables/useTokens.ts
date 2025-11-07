@@ -1,40 +1,23 @@
 /**
  * Token Management Composable
- * Handles Access Token (sessionStorage) and Refresh Token (httpOnly cookie)
- * 
- * Flow:
- * - Access Token: Stored in sessionStorage, sent via Authorization header
- * - Refresh Token: Stored in httpOnly cookie by backend, automatically sent
+ * Handles Access Token via Pinia store (persisted in localStorage)
+ * Refresh Token handled by backend (httpOnly cookie)
  */
 export const useTokens = () => {
-  const ACCESS_TOKEN_KEY = 'access_token'
-
   /**
-   * Get access token from sessionStorage
+   * Get access token from Pinia store
    */
   const getAccessToken = (): string | null => {
-    if (import.meta.client) {
-      return sessionStorage.getItem(ACCESS_TOKEN_KEY)
-    }
-    return null
+    const authStore = useAuthStore()
+    return authStore.accessToken
   }
 
   /**
-   * Set access token to sessionStorage
+   * Set access token to Pinia store
    */
   const setAccessToken = (token: string): void => {
-    if (import.meta.client) {
-      sessionStorage.setItem(ACCESS_TOKEN_KEY, token)
-    }
-  }
-
-  /**
-   * Remove access token from sessionStorage
-   */
-  const removeAccessToken = (): void => {
-    if (import.meta.client) {
-      sessionStorage.removeItem(ACCESS_TOKEN_KEY)
-    }
+    const authStore = useAuthStore()
+    authStore.setAccessToken(token)
   }
 
   /**
@@ -48,14 +31,14 @@ export const useTokens = () => {
    * Clear all tokens (logout)
    */
   const clearTokens = (): void => {
-    removeAccessToken()
+    const authStore = useAuthStore()
+    authStore.clearAuth()
     // Refresh token will be cleared by backend when calling logout endpoint
   }
 
   return {
     getAccessToken,
     setAccessToken,
-    removeAccessToken,
     hasAccessToken,
     clearTokens,
   }

@@ -1,6 +1,7 @@
 <template>
-  <div>
-    <Header />
+  <Header />
+
+  <UContainer class="py-6 mt-6 space-y-8">
     <slot />
-  </div>
+  </UContainer>
 </template>

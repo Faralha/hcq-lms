@@ -33,7 +33,7 @@ export const useSemesterApi = () => {
    * Get all semesters
    * GET /semesters
    */
-  const getAllSemesters = async (): Promise<ApiResponse<Semester[]>> => {
+  const getAllSemesters = async (): Promise<Semester[]> => {
     return api.get<Semester[]>('semesters')
   }
 
@@ -41,7 +41,7 @@ export const useSemesterApi = () => {
    * Create semester (Admin only)
    * POST /semesters
    */
-  const createSemester = async (data: CreateSemesterRequest): Promise<ApiResponse<Semester>> => {
+  const createSemester = async (data: CreateSemesterRequest): Promise<Semester> => {
     return api.post<Semester>('semesters', data)
   }
 
@@ -49,7 +49,7 @@ export const useSemesterApi = () => {
    * Update semester (Admin only)
    * PATCH /semesters/:id
    */
-  const updateSemester = async (id: string, data: UpdateSemesterRequest): Promise<ApiResponse<Semester>> => {
+  const updateSemester = async (id: string, data: UpdateSemesterRequest): Promise<Semester> => {
     return api.patch<Semester>(`semesters/${id}`, data)
   }
 
@@ -57,7 +57,7 @@ export const useSemesterApi = () => {
    * Delete semester (Admin only)
    * DELETE /semesters/:id
    */
-  const deleteSemester = async (id: string): Promise<ApiResponse<void>> => {
+  const deleteSemester = async (id: string): Promise<void> => {
     return api.delete(`semesters/${id}`)
   }
 

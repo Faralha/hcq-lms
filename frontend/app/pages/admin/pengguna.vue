@@ -1,0 +1,262 @@
+<template>
+  <div class="space-y-6">
+    <!-- Greetings/Header -->
+    <div>
+      <p class="text-lg font-medium text-[--ui-text-muted]">Manajemen</p>
+      <h1 class="text-3xl font-bold">Atur Pengguna</h1>
+    </div>
+
+    <!-- Invite Pengajar -->
+    <UModal>
+      <UButton label="Invite Pengajar" icon="i-lucide-user-plus" />
+
+      <template #body>
+        <UForm>
+          <UFormField label="Email" name="email">
+            <UInput type="email" placeholder="teacher@gmail.com" />
+          </UFormField>
+        </UForm>
+      </template>
+    </UModal>
+
+    <!-- Tableview -->
+    <div class="flex flex-col flex-1 w-full border border-accented rounded-lg overflow-hidden">
+      <!-- Filter & Actions Bar -->
+      <div class="flex items-center justify-between gap-3 px-4 py-3.5 border-b border-accented">
+        <UInput v-model="emailFilter" class="max-w-sm min-w-[12ch]" placeholder="Filter by email..."
+          icon="i-lucide-search">
+          <template #trailing>
+            <UButton v-show="emailFilter !== ''" color="neutral" variant="link" icon="i-lucide-x" :padded="false"
+              @click="emailFilter = ''" />
+          </template>
+        </UInput>
+      </div>
+
+      <!-- Table -->
+      <UTable ref="table" :data="users" :columns="columns" :loading="isLoading" loading-color="primary"
+        loading-animation="carousel" class="flex-1" />
+
+      <!-- Footer Info -->
+      <div class="px-4 py-3.5 border-t border-accented text-sm text-[--ui-text-muted]">
+        {{ filteredUsersCount }} user(s) found
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { h, resolveComponent } from 'vue'
+import type { TableColumn, FormError, FormSubmitEvent, FormErrorEvent } from '@nuxt/ui'
+import type { User } from '~/composables/useUserApi'
+
+definePageMeta({
+  layout: 'menu',
+  middleware: 'auth',
+  ssr: false,
+})
+
+const UBadge = resolveComponent('UBadge')
+const UButton = resolveComponent('UButton')
+const UDropdownMenu = resolveComponent('UDropdownMenu')
+
+const toast = useToast()
+const { getAllUsers, deleteUser } = useUserApi()
+
+// State
+const users = ref<User[]>([])
+const isLoading = ref(false)
+const emailFilter = ref('')
+const table = useTemplateRef('table')
+const inviteForm = reactive({
+  email: undefined as string | undefined
+})
+
+// Computed
+const filteredUsersCount = computed(() => {
+  if (!emailFilter.value) return users.value.length
+  return users.value.filter(user =>
+    user.email.toLowerCase().includes(emailFilter.value.toLowerCase())
+  ).length
+})
+
+// Table Columns
+const columns: TableColumn<User>[] = [
+  {
+    accessorKey: 'nama',
+    header: 'Name',
+    cell: ({ row }) => {
+      return h('div', {}, [
+        h('p', { class: 'font-medium text-[--ui-text-highlighted]' }, row.original.nama),
+        row.original.fullName && h('p', { class: 'text-sm text-[--ui-text-muted]' }, row.original.fullName)
+      ])
+    }
+  },
+  {
+    accessorKey: 'email',
+    header: 'Email',
+    cell: ({ row }) => h('span', { class: 'lowercase' }, row.getValue('email'))
+  },
+  {
+    accessorKey: 'role',
+    header: 'Role',
+    cell: ({ row }) => {
+      const role = row.getValue('role') as string
+      const color = {
+        ADMIN: 'error' as const,
+        PENGAJAR: 'primary' as const,
+        PELAJAR: 'success' as const
+      }[role] || 'neutral' as const
+
+      return h(UBadge, {
+        class: 'capitalize',
+        variant: 'subtle',
+        color
+      }, () => role.toLowerCase())
+    }
+  },
+  {
+    accessorKey: 'phoneNumber',
+    header: 'Phone',
+    cell: ({ row }) => row.original.phoneNumber || '-'
+  },
+  {
+    accessorKey: 'cities',
+    header: 'City',
+    cell: ({ row }) => row.original.cities || '-'
+  },
+  {
+    accessorKey: 'createdAt',
+    header: 'Joined',
+    cell: ({ row }) => {
+      return new Date(row.getValue('createdAt')).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      })
+    }
+  },
+  {
+    id: 'actions',
+    enableHiding: false,
+    cell: ({ row }) => {
+      const items = [
+        {
+          type: 'label' as const,
+          label: 'Actions'
+        },
+        {
+          label: 'Edit User',
+          icon: 'i-lucide-edit',
+          onSelect: () => handleEdit(row.original)
+        },
+        {
+          type: 'separator' as const
+        },
+        {
+          label: 'Delete User',
+          icon: 'i-lucide-trash',
+          color: 'error' as const,
+          onSelect: () => handleDelete(row.original)
+        }
+      ]
+
+      return h('div', { class: 'text-right' }, h(UDropdownMenu, {
+        'content': {
+          align: 'end'
+        },
+        items,
+        'aria-label': 'Actions dropdown'
+      }, () => h(UButton, {
+        'icon': 'i-lucide-ellipsis-vertical',
+        'color': 'neutral',
+        'variant': 'ghost',
+        'class': 'ml-auto',
+        'aria-label': 'Actions dropdown'
+      })))
+    }
+  }
+]
+
+// Methods
+async function fetchUsers() {
+  isLoading.value = true
+  try {
+    const response = await getAllUsers()
+
+    console.log('[USERS] API Response:', response)
+
+    // API returns array directly based on API_DOCUMENTATION.md
+    // GET /users returns: [{ id, email, nama, role, ... }]
+    if (Array.isArray(response)) {
+      users.value = response
+      // toast.add({
+      //   title: 'Users loaded successfully',
+      //   description: `Loaded ${response.length} user(s)`,
+      //   color: 'success',
+      //   icon: 'i-lucide-check-circle'
+      // })
+    } else {
+      throw new Error('Invalid response format from server')
+    }
+  } catch (error: any) {
+    console.error('[USERS] Error:', error)
+    toast.add({
+      title: 'Error loading users',
+      description: error.message || 'Failed to fetch users',
+      color: 'error',
+      icon: 'i-lucide-alert-circle'
+    })
+  } finally {
+    isLoading.value = false
+  }
+}
+
+function handleEdit(user: User) {
+  toast.add({
+    title: 'Edit User',
+    description: `Editing ${user.nama}`,
+    color: 'info',
+    icon: 'i-lucide-edit'
+  })
+}
+
+async function handleDelete(user: User) {
+  const confirmed = confirm(`Are you sure you want to delete ${user.nama}?`)
+
+  if (!confirmed) return
+
+  try {
+    const response = await deleteUser(user.id)
+
+    if (response.success) {
+      toast.add({
+        title: 'User deleted successfully',
+        color: 'success',
+        icon: 'i-lucide-check-circle'
+      })
+
+      // Remove user from local state
+      users.value = users.value.filter(u => u.id !== user.id)
+    } else {
+      throw new Error(response.message || 'Failed to delete user')
+    }
+  } catch (error: any) {
+    toast.add({
+      title: 'Error deleting user',
+      description: error.message,
+      color: 'error',
+      icon: 'i-lucide-alert-circle'
+    })
+  }
+}
+
+// Watch email filter and update table
+watch(emailFilter, (value) => {
+  table.value?.tableApi?.getColumn('email')?.setFilterValue(value)
+})
+
+// Load users on mount
+onMounted(() => {
+  fetchUsers()
+})
+</script>

@@ -12,6 +12,12 @@ export interface Gaji {
   tahun: number
   status: 'LUNAS' | 'BELUM_LUNAS'
   createdAt: string
+  user?: {
+    id: string
+    email: string
+    nama: string
+    role: string
+  }
 }
 
 export interface CreateGajiRequest {
@@ -19,7 +25,7 @@ export interface CreateGajiRequest {
   nominal: number
   bulan: string
   tahun: number
-  status: 'LUNAS' | 'BELUM_LUNAS'
+  status?: 'LUNAS' | 'BELUM_LUNAS'
 }
 
 export interface UpdateGajiRequest {
@@ -34,7 +40,7 @@ export const useGajiApi = () => {
    * Create gaji (Admin only)
    * POST /gaji
    */
-  const createGaji = async (data: CreateGajiRequest): Promise<ApiResponse<Gaji>> => {
+  const createGaji = async (data: CreateGajiRequest): Promise<Gaji> => {
     return api.post<Gaji>('gaji', data)
   }
 
@@ -42,7 +48,7 @@ export const useGajiApi = () => {
    * Get all gaji (Admin only)
    * GET /gaji
    */
-  const getAllGaji = async (): Promise<ApiResponse<Gaji[]>> => {
+  const getAllGaji = async (): Promise<Gaji[]> => {
     return api.get<Gaji[]>('gaji')
   }
 
@@ -50,7 +56,7 @@ export const useGajiApi = () => {
    * Get gaji by pengajar (Admin only)
    * GET /gaji/pengajar/:pengajarId
    */
-  const getGajiByPengajar = async (pengajarId: string): Promise<ApiResponse<Gaji[]>> => {
+  const getGajiByPengajar = async (pengajarId: string): Promise<Gaji[]> => {
     return api.get<Gaji[]>(`gaji/pengajar/${pengajarId}`)
   }
 
@@ -58,7 +64,7 @@ export const useGajiApi = () => {
    * Get my gaji (Pengajar)
    * GET /gaji/saya
    */
-  const getMyGaji = async (): Promise<ApiResponse<Gaji[]>> => {
+  const getMyGaji = async (): Promise<Gaji[]> => {
     return api.get<Gaji[]>('gaji/saya')
   }
 
@@ -66,7 +72,7 @@ export const useGajiApi = () => {
    * Update gaji (Admin only)
    * PATCH /gaji/:id
    */
-  const updateGaji = async (id: string, data: UpdateGajiRequest): Promise<ApiResponse<Gaji>> => {
+  const updateGaji = async (id: string, data: UpdateGajiRequest): Promise<Gaji> => {
     return api.patch<Gaji>(`gaji/${id}`, data)
   }
 
@@ -74,7 +80,7 @@ export const useGajiApi = () => {
    * Delete gaji (Admin only)
    * DELETE /gaji/:id
    */
-  const deleteGaji = async (id: string): Promise<ApiResponse<void>> => {
+  const deleteGaji = async (id: string): Promise<void> => {
     return api.delete(`gaji/${id}`)
   }
 

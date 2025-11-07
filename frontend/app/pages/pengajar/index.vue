@@ -1,28 +1,24 @@
 <template>
-  <UContainer class="py-4 space-y-8">
+  <!-- Dashboard Greetings -->
+  <div>
+    <p class="text-lg font-medium ">{{ user?.role }}</p>
+    <h1 class="text-3xl font-bold">Hello, {{ user?.nama ? user?.nama : 'User' }}!</h1>
+    <p className="text-lg font-medium">{{ clockNow }}</p>
+  </div>
 
-    <!-- Dashboard Greetings -->
-    <div>
-      <p class="text-lg font-medium ">{{ user?.role }}</p>
-      <h1 class="text-3xl font-bold">Hello, {{ user?.nama ? user?.nama : 'User' }}!</h1>
-      <p className="text-lg font-medium">{{ clockNow }}</p>
-    </div>
+  <!-- Overview -->
+  <!-- TO-DO: Add pengajar overview such as active semester, available course, etc -->
 
-    <!-- Overview -->
-    <!-- TO-DO: Add pengajar overview such as active semester, available course, etc -->
-
-    <!-- Menu Section -->
-    <MenuSection title="Menu" :items="menuItems" />
-
-
-  </UContainer>
+  <!-- Menu Section -->
+  <MenuSection title="Menu" :items="menuItems" />
 </template>
 
 <script setup lang="ts">
 import type { MenuItem } from '~/components/MenuSection.vue'
 
 definePageMeta({
-  layout: 'pengajar',
+  middleware: 'auth',
+  ssr: false,
 })
 
 const { user } = useAuth()

@@ -12,9 +12,13 @@ export interface Kelas {
   namaKelas: string
   jadwalHari: string
   jadwalJam: string
-  semester: Semester
-  mataPelajaran: MataPelajaran
-  enrollments?: Array<{ user: User }>
+  semesterId: string
+  mataPelajaranId: string
+  semester?: Semester
+  mataPelajaran?: MataPelajaran
+  enrollments?: Array<{
+    user: User
+  }>
   _count?: {
     enrollments: number
   }
@@ -51,7 +55,7 @@ export const useKelasApi = () => {
    * Get all kelas
    * GET /kelas
    */
-  const getAllKelas = async (): Promise<ApiResponse<Kelas[]>> => {
+  const getAllKelas = async (): Promise<Kelas[]> => {
     return api.get<Kelas[]>('kelas')
   }
 
@@ -59,7 +63,7 @@ export const useKelasApi = () => {
    * Get kelas by ID
    * GET /kelas/:id
    */
-  const getKelasById = async (id: string): Promise<ApiResponse<Kelas>> => {
+  const getKelasById = async (id: string): Promise<Kelas> => {
     return api.get<Kelas>(`kelas/${id}`)
   }
 
@@ -67,7 +71,7 @@ export const useKelasApi = () => {
    * Create kelas (Admin only)
    * POST /kelas
    */
-  const createKelas = async (data: CreateKelasRequest): Promise<ApiResponse<Kelas>> => {
+  const createKelas = async (data: CreateKelasRequest): Promise<Kelas> => {
     return api.post<Kelas>('kelas', data)
   }
 
@@ -75,7 +79,7 @@ export const useKelasApi = () => {
    * Update kelas (Admin only)
    * PATCH /kelas/:id
    */
-  const updateKelas = async (id: string, data: UpdateKelasRequest): Promise<ApiResponse<Kelas>> => {
+  const updateKelas = async (id: string, data: UpdateKelasRequest): Promise<Kelas> => {
     return api.patch<Kelas>(`kelas/${id}`, data)
   }
 
@@ -83,7 +87,7 @@ export const useKelasApi = () => {
    * Delete kelas (Admin only)
    * DELETE /kelas/:id
    */
-  const deleteKelas = async (id: string): Promise<ApiResponse<void>> => {
+  const deleteKelas = async (id: string): Promise<void> => {
     return api.delete(`kelas/${id}`)
   }
 
@@ -91,7 +95,7 @@ export const useKelasApi = () => {
    * Enroll pelajar to kelas (Admin only)
    * POST /kelas/:kelasId/enroll-pelajar
    */
-  const enrollPelajar = async (kelasId: string, data: EnrollPelajarRequest): Promise<ApiResponse<any>> => {
+  const enrollPelajar = async (kelasId: string, data: EnrollPelajarRequest): Promise<any> => {
     return api.post(`kelas/${kelasId}/enroll-pelajar`, data)
   }
 
@@ -99,7 +103,7 @@ export const useKelasApi = () => {
    * Assign pengajar to kelas (Admin only)
    * POST /kelas/:kelasId/assign-pengajar
    */
-  const assignPengajar = async (kelasId: string, data: AssignPengajarRequest): Promise<ApiResponse<any>> => {
+  const assignPengajar = async (kelasId: string, data: AssignPengajarRequest): Promise<any> => {
     return api.post(`kelas/${kelasId}/assign-pengajar`, data)
   }
 
@@ -107,7 +111,7 @@ export const useKelasApi = () => {
    * Remove user from kelas (Admin only)
    * DELETE /kelas/:kelasId/unenroll/:userId
    */
-  const unenrollUser = async (kelasId: string, userId: string): Promise<ApiResponse<void>> => {
+  const unenrollUser = async (kelasId: string, userId: string): Promise<void> => {
     return api.delete(`kelas/${kelasId}/unenroll/${userId}`)
   }
 

@@ -20,6 +20,7 @@
 <script setup lang="ts">
 definePageMeta({
   middleware: 'auth',
+  ssr: false,
 })
 
 const { user, isAuthenticated, fetchUser } = useAuth()

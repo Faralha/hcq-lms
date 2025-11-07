@@ -55,3 +55,14 @@ export interface ResetPasswordRequest {
   password: string
   confirmPassword: string
 }
+
+export interface InvitePengajarRequest {
+  email: string
+}
+
+export interface InvitePengajarResponse {
+  message: string
+  email: string
+  magicLink: string
+  expiresAt: string
+}

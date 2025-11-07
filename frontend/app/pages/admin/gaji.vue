@@ -1,0 +1,448 @@
+<template>
+  <div class="space-y-6">
+    <!-- Header -->
+    <div>
+      <p class="text-lg font-medium text-[--ui-text-muted]">Keuangan</p>
+      <h1 class="text-3xl font-bold">Manajemen Gaji Guru</h1>
+    </div>
+
+    <!-- Tambah Gaji Modal -->
+    <UModal v-model:open="isModalOpen">
+      <template #content>
+        <UCard>
+          <template #header>
+            <h3 class="text-lg font-semibold">{{ isEditing ? 'Edit' : 'Tambah' }} Gaji Guru</h3>
+          </template>
+
+          <UForm :state="form" @submit="onSubmit" class="space-y-4">
+            <UFormField label="Pengajar" name="userId" required>
+              <USelect class="w-full" v-model="form.userId" :items="pengajarOptions" placeholder="Pilih Pengajar"
+                :disabled="isEditing" />
+            </UFormField>
+
+            <UFormField label="Bulan" name="bulan" required>
+              <USelect class="w-full" v-model="form.bulan" :items="bulanOptions" placeholder="Pilih Bulan" />
+            </UFormField>
+
+            <UFormField label="Tahun" name="tahun" required>
+              <UInput class="w-full" v-model.number="form.tahun" type="number" placeholder="2025" />
+            </UFormField>
+
+            <UFormField label="Nominal (Rp)" name="nominal" required>
+              <UInput class="w-full" v-model.number="form.nominal" type="number" placeholder="3000000" />
+            </UFormField>
+
+            <UFormField label="Status" name="status" required>
+              <USelect class="w-full" v-model="form.status" :items="statusOptions" />
+            </UFormField>
+
+            <div class="flex flex-col justify-center gap-3">
+              <UButton class="justify-center" type="submit" :loading="isSubmitting">
+                {{ isEditing ? 'Update' : 'Tambah' }}
+              </UButton>
+              <UButton class="justify-center" color="error" variant="outline" @click="closeModal">
+                Batal
+              </UButton>
+            </div>
+          </UForm>
+        </UCard>
+      </template>
+    </UModal>
+
+    <div class="flex gap-3">
+      <UButton label="Tambah Gaji" icon="i-lucide-banknote" @click="openCreateModal" />
+      <UButton label="Generate Gaji Massal" icon="i-lucide-file-spreadsheet" color="secondary" variant="outline"
+        @click="handleBulkGenerate" />
+    </div>
+
+    <!-- Tableview -->
+    <div class="flex flex-col flex-1 w-full border border-accented rounded-lg overflow-hidden">
+      <!-- Filter & Actions Bar -->
+      <div class="flex items-center justify-between gap-3 px-4 py-3.5 border-b border-accented">
+        <UInput v-model="namaFilter" class="max-w-sm min-w-[12ch]" placeholder="Filter by nama..."
+          icon="i-lucide-search">
+          <template #trailing>
+            <UButton v-show="namaFilter !== ''" color="neutral" variant="link" icon="i-lucide-x" :padded="false"
+              @click="namaFilter = ''" />
+          </template>
+        </UInput>
+
+        <USelect v-model="statusFilter" :options="[
+          { label: 'Semua Status', value: '' },
+          { label: 'Belum Lunas', value: 'BELUM_LUNAS' },
+          { label: 'Lunas', value: 'LUNAS' }
+        ]" class="w-40" />
+      </div>
+
+      <!-- Table -->
+      <UTable ref="table" :data="filteredGaji" :columns="columns" :loading="isLoading" loading-color="primary"
+        loading-animation="carousel" class="flex-1" />
+
+      <!-- Footer Info -->
+      <div class="px-4 py-3.5 border-t border-accented text-sm text-[--ui-text-muted] flex justify-between">
+        <span>{{ filteredGaji.length }} gaji ditemukan</span>
+        <span class="font-semibold">Total Belum Lunas: {{ formatCurrency(totalBelumLunas) }}</span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { h, resolveComponent } from 'vue'
+import type { TableColumn } from '@nuxt/ui'
+import type { Gaji } from '~/composables/useGajiApi'
+
+definePageMeta({
+  layout: 'menu',
+  middleware: 'auth',
+  ssr: false,
+})
+
+const UButton = resolveComponent('UButton')
+const UDropdownMenu = resolveComponent('UDropdownMenu')
+const UBadge = resolveComponent('UBadge')
+
+const toast = useToast()
+const { getAllGaji, createGaji, updateGaji, deleteGaji } = useGajiApi()
+const { getAllUsers } = useUserApi()
+
+// State
+const gajiList = ref<Gaji[]>([])
+const pengajarList = ref<Array<{ id: string; nama: string; email: string }>>([])
+const isLoading = ref(false)
+const namaFilter = ref('')
+const statusFilter = ref('')
+const table = useTemplateRef('table')
+const isModalOpen = ref(false)
+const isEditing = ref(false)
+const isSubmitting = ref(false)
+
+const form = ref({
+  id: '',
+  userId: '',
+  bulan: '',
+  tahun: new Date().getFullYear(),
+  nominal: 3000000,
+  status: 'BELUM_LUNAS' as 'BELUM_LUNAS' | 'LUNAS'
+})
+
+const bulanOptions = [
+  { label: 'Januari', value: 'Januari' },
+  { label: 'Februari', value: 'Februari' },
+  { label: 'Maret', value: 'Maret' },
+  { label: 'April', value: 'April' },
+  { label: 'Mei', value: 'Mei' },
+  { label: 'Juni', value: 'Juni' },
+  { label: 'Juli', value: 'Juli' },
+  { label: 'Agustus', value: 'Agustus' },
+  { label: 'September', value: 'September' },
+  { label: 'Oktober', value: 'Oktober' },
+  { label: 'November', value: 'November' },
+  { label: 'Desember', value: 'Desember' }
+]
+
+const statusOptions = [
+  { label: 'Belum Lunas', value: 'BELUM_LUNAS' },
+  { label: 'Lunas', value: 'LUNAS' }
+]
+
+// Computed
+const pengajarOptions = computed(() =>
+  pengajarList.value.map(p => ({ label: `${p.nama} (${p.email})`, value: p.id }))
+)
+
+const filteredGaji = computed(() => {
+  let filtered = gajiList.value
+
+  if (namaFilter.value) {
+    filtered = filtered.filter(gaji =>
+      gaji.user?.nama.toLowerCase().includes(namaFilter.value.toLowerCase())
+    )
+  }
+
+  if (statusFilter.value) {
+    filtered = filtered.filter(gaji => gaji.status === statusFilter.value)
+  }
+
+  return filtered
+})
+
+const totalBelumLunas = computed(() => {
+  return filteredGaji.value
+    .filter(gaji => gaji.status === 'BELUM_LUNAS')
+    .reduce((sum, gaji) => sum + gaji.nominal, 0)
+})
+
+// Table Columns
+const columns: TableColumn<Gaji>[] = [
+  {
+    accessorKey: 'user',
+    header: 'Nama Pengajar',
+    cell: ({ row }) => {
+      const user = row.original.user
+      return user ? h('div', [
+        h('p', { class: 'font-medium' }, user.nama),
+        h('p', { class: 'text-xs text-[--ui-text-muted]' }, user.email)
+      ]) : '-'
+    }
+  },
+  {
+    accessorKey: 'bulan',
+    header: 'Periode',
+    cell: ({ row }) => {
+      return `${row.getValue('bulan')} ${row.original.tahun}`
+    }
+  },
+  {
+    accessorKey: 'nominal',
+    header: 'Nominal',
+    cell: ({ row }) => {
+      return h('span', { class: 'font-mono font-semibold' }, formatCurrency(row.getValue('nominal')))
+    }
+  },
+  {
+    accessorKey: 'status',
+    header: 'Status',
+    cell: ({ row }) => {
+      const status = row.getValue('status') as string
+      const color = status === 'LUNAS' ? 'success' : 'warning'
+
+      return h(UBadge, {
+        variant: 'subtle',
+        color
+      }, () => status === 'LUNAS' ? 'Lunas' : 'Belum Lunas')
+    }
+  },
+  {
+    accessorKey: 'createdAt',
+    header: 'Dibuat',
+    cell: ({ row }) => {
+      return new Date(row.getValue('createdAt')).toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      })
+    }
+  },
+  {
+    id: 'actions',
+    enableHiding: false,
+    cell: ({ row }) => {
+      const items = [
+        {
+          type: 'label' as const,
+          label: 'Actions'
+        },
+        {
+          label: 'Edit Gaji',
+          icon: 'i-lucide-edit',
+          onSelect: () => handleEdit(row.original)
+        },
+        {
+          label: row.original.status === 'BELUM_LUNAS' ? 'Tandai Lunas' : 'Tandai Belum Lunas',
+          icon: 'i-lucide-check-circle',
+          onSelect: () => toggleStatus(row.original)
+        },
+        {
+          type: 'separator' as const
+        },
+        {
+          label: 'Delete Gaji',
+          icon: 'i-lucide-trash',
+          color: 'error' as const,
+          onSelect: () => handleDelete(row.original)
+        }
+      ]
+
+      return h('div', { class: 'text-right' }, h(UDropdownMenu, {
+        'content': { align: 'end' },
+        items,
+        'aria-label': 'Actions dropdown'
+      }, () => h(UButton, {
+        'icon': 'i-lucide-ellipsis-vertical',
+        'color': 'neutral',
+        'variant': 'ghost',
+        'class': 'ml-auto',
+        'aria-label': 'Actions dropdown'
+      })))
+    }
+  }
+]
+
+// Methods
+function formatCurrency(amount: number) {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0
+  }).format(amount)
+}
+
+async function fetchGaji() {
+  isLoading.value = true
+  try {
+    const response = await getAllGaji()
+    gajiList.value = response
+  } catch (error: any) {
+    console.error('[GAJI] Error:', error)
+    toast.add({
+      title: 'Error loading gaji',
+      description: error.message,
+      color: 'error',
+      icon: 'i-lucide-alert-circle'
+    })
+  } finally {
+    isLoading.value = false
+  }
+}
+
+async function fetchPengajar() {
+  try {
+    const response = await getAllUsers()
+    const users = response
+    pengajarList.value = users.filter(u => u.role === 'PENGAJAR')
+  } catch (error) {
+    console.error('[PENGAJAR] Error:', error)
+  }
+}
+
+function openCreateModal() {
+  isEditing.value = false
+  const currentMonth = new Date().toLocaleDateString('id-ID', { month: 'long' })
+  form.value = {
+    id: '',
+    userId: '',
+    bulan: currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1),
+    tahun: new Date().getFullYear(),
+    nominal: 3000000,
+    status: 'BELUM_LUNAS'
+  }
+  isModalOpen.value = true
+}
+
+function handleEdit(gaji: Gaji) {
+  isEditing.value = true
+  form.value = {
+    id: gaji.id,
+    userId: gaji.userId,
+    bulan: gaji.bulan,
+    tahun: gaji.tahun,
+    nominal: gaji.nominal,
+    status: gaji.status
+  }
+  isModalOpen.value = true
+}
+
+function closeModal() {
+  isModalOpen.value = false
+}
+
+async function onSubmit() {
+  isSubmitting.value = true
+  try {
+    const payload = {
+      userId: form.value.userId,
+      bulan: form.value.bulan,
+      tahun: form.value.tahun,
+      nominal: form.value.nominal,
+      status: form.value.status
+    }
+
+    if (isEditing.value) {
+      await updateGaji(form.value.id, {
+        nominal: payload.nominal,
+        status: payload.status
+      })
+    } else {
+      await createGaji(payload)
+    }
+
+    toast.add({
+      title: `Gaji ${isEditing.value ? 'updated' : 'created'} successfully`,
+      color: 'success',
+      icon: 'i-lucide-check-circle'
+    })
+
+    closeModal()
+    await fetchGaji()
+  } catch (error: any) {
+    toast.add({
+      title: `Error ${isEditing.value ? 'updating' : 'creating'} gaji`,
+      description: error.message,
+      color: 'error',
+      icon: 'i-lucide-alert-circle'
+    })
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+async function toggleStatus(gaji: Gaji) {
+  try {
+    const newStatus = gaji.status === 'LUNAS' ? 'BELUM_LUNAS' : 'LUNAS'
+
+    await updateGaji(gaji.id, { status: newStatus })
+
+    toast.add({
+      title: 'Status updated successfully',
+      color: 'success',
+      icon: 'i-lucide-check-circle'
+    })
+
+    await fetchGaji()
+  } catch (error: any) {
+    toast.add({
+      title: 'Error updating status',
+      description: error.message,
+      color: 'error',
+      icon: 'i-lucide-alert-circle'
+    })
+  }
+}
+
+async function handleDelete(gaji: Gaji) {
+  const confirmed = confirm('Yakin ingin menghapus data gaji ini?')
+  if (!confirmed) return
+
+  try {
+    await deleteGaji(gaji.id)
+
+    toast.add({
+      title: 'Gaji deleted successfully',
+      color: 'success',
+      icon: 'i-lucide-check-circle'
+    })
+
+    gajiList.value = gajiList.value.filter(g => g.id !== gaji.id)
+  } catch (error: any) {
+    toast.add({
+      title: 'Error deleting gaji',
+      description: error.message,
+      color: 'error',
+      icon: 'i-lucide-alert-circle'
+    })
+  }
+}
+
+function handleBulkGenerate() {
+  toast.add({
+    title: 'Bulk Generate',
+    description: 'Feature coming soon - akan generate gaji untuk semua pengajar aktif',
+    color: 'info',
+    icon: 'i-lucide-info'
+  })
+}
+
+// Watch filter
+watch(namaFilter, (value) => {
+  table.value?.tableApi?.getColumn('user')?.setFilterValue(value)
+})
+
+// Load data on mount
+onMounted(async () => {
+  await Promise.all([
+    fetchGaji(),
+    fetchPengajar()
+  ])
+})
+</script>

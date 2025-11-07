@@ -18,7 +18,7 @@ export const useApi = () => {
   const request = async <T = any>(
     endpoint: string,
     options: ApiRequestConfig = {}
-  ): Promise<ApiResponse<T>> => {
+  ): Promise<T> => {
     const {
       method = 'GET',
       body,
@@ -57,14 +57,18 @@ export const useApi = () => {
       // Use $fetch with proper configuration
       const fetchOptions: any = {
         method,
-        body,
-        query,
         headers: requestHeaders,
+        credentials: 'include', // Always include credentials for cookies
       }
 
-      // Only send credentials on client-side (cookies only available in browser)
-      if (import.meta.client) {
-        fetchOptions.credentials = 'include'
+      // Add body if present
+      if (body !== undefined) {
+        fetchOptions.body = body
+      }
+
+      // Add query if present
+      if (query !== undefined) {
+        fetchOptions.query = query
       }
 
       const response = await $fetch<any>(url, fetchOptions)
@@ -84,41 +88,57 @@ export const useApi = () => {
         try {
           // Try to refresh token
           const { setAccessToken } = useTokens()
+          
+          console.log('[API] Calling refresh endpoint...')
           const refreshResponse = await $fetch<any>(`${apiBase}/${version}/auth/refresh`, {
             method: 'POST',
             credentials: 'include', // Send refresh token cookie
+            headers: {
+              'Content-Type': 'application/json',
+            },
           })
 
           console.log('[API] Refresh response:', refreshResponse)
 
-          if (refreshResponse?.data?.accessToken) {
+          // Check for accessToken in various response formats
+          const newAccessToken = refreshResponse?.accessToken || refreshResponse?.data?.accessToken
+          
+          if (newAccessToken) {
             console.log('[API] Token refreshed successfully')
             
             // Save new access token
-            setAccessToken(refreshResponse.data.accessToken)
+            setAccessToken(newAccessToken)
             
             // Retry original request with new token
-            requestHeaders['Authorization'] = `Bearer ${refreshResponse.data.accessToken}`
+            requestHeaders['Authorization'] = `Bearer ${newAccessToken}`
             
             console.log('[API] Retrying original request with new token')
             const retryResponse = await $fetch<any>(url, {
               method,
-              body,
-              query,
+              body: body !== undefined ? body : undefined,
+              query: query !== undefined ? query : undefined,
               headers: requestHeaders,
               credentials: 'include',
             })
             
             return retryResponse
+          } else {
+            console.error('[API] No access token in refresh response')
+            throw new Error('No access token received from refresh endpoint')
           }
-        } catch (refreshError) {
+        } catch (refreshError: any) {
           console.error('[API] Token refresh failed:', refreshError)
-          console.error('[API] Refresh error details:', JSON.stringify(refreshError, null, 2))
+          console.error('[API] Refresh error status:', refreshError?.statusCode)
+          console.error('[API] Refresh error data:', refreshError?.data)
+          
           // Clear tokens and redirect to login
           const { clearTokens } = useTokens()
           clearTokens()
           
+          console.log('[API] Redirecting to login page...')
           navigateTo('/auth/login')
+          
+          throw refreshError
         }
       }
       
