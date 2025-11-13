@@ -25,7 +25,7 @@ NUXT_PUBLIC_API_BASE=http://localhost:4000/api
 
 ### Development Server
 
-Start the development server on `http://localhost:3001`:
+Start the development server on `http://localhost:3000`:
 
 ```bash
 pnpm run dev
