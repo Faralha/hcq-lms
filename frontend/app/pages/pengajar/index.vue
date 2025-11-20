@@ -26,10 +26,10 @@ const { user } = useAuth()
 // Menu items
 const menuItems: MenuItem[] = [
   {
-    label: 'Mata Pelajaran',
-    description: 'Lihat dan kelola mata pelajaran yang Anda ajar',
+    label: 'Kelas',
+    description: 'Lihat dan kelola Kelas yang Anda ajar',
     icon: 'i-lucide-book',
-    to: '/pengajar/mata-pelajaran'
+    to: '/pengajar/kelas'
   },
   {
     label: 'Presensi',
