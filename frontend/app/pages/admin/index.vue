@@ -167,6 +167,12 @@ const menuItems: MenuItem[] = [
     description: 'Lihat Laporan',
     icon: 'i-lucide-chart-no-axes-combined',
     to: '/admin/laporan'
+  },
+  {
+    label: 'Announcements',
+    description: 'Manage Announcements',
+    icon: 'i-lucide-megaphone',
+    to: '/admin/announcements'
   }
 ]
 

@@ -45,7 +45,7 @@ export const useMateriApi = () => {
    * Create materi section (Pengajar only)
    * POST /materi/section
    */
-  const createSection = async (data: CreateSectionRequest): Promise<ApiResponse<MateriSection>> => {
+  const createSection = async (data: CreateSectionRequest): Promise<MateriSection> => {
     return api.post<MateriSection>('materi/section', data)
   }
 
@@ -53,7 +53,7 @@ export const useMateriApi = () => {
    * Get sections by kelas
    * GET /materi/section/kelas/:kelasId
    */
-  const getSectionsByKelas = async (kelasId: string): Promise<ApiResponse<MateriSection[]>> => {
+  const getSectionsByKelas = async (kelasId: string): Promise<MateriSection[]> => {
     return api.get<MateriSection[]>(`materi/section/kelas/${kelasId}`)
   }
 
@@ -61,7 +61,7 @@ export const useMateriApi = () => {
    * Update section (Pengajar only)
    * PATCH /materi/section/:id
    */
-  const updateSection = async (id: string, data: UpdateSectionRequest): Promise<ApiResponse<MateriSection>> => {
+  const updateSection = async (id: string, data: UpdateSectionRequest): Promise<MateriSection> => {
     return api.patch<MateriSection>(`materi/section/${id}`, data)
   }
 
@@ -69,7 +69,7 @@ export const useMateriApi = () => {
    * Delete section (Pengajar only)
    * DELETE /materi/section/:id
    */
-  const deleteSection = async (id: string): Promise<ApiResponse<void>> => {
+  const deleteSection = async (id: string): Promise<void> => {
     return api.delete(`materi/section/${id}`)
   }
 
@@ -78,7 +78,7 @@ export const useMateriApi = () => {
    * POST /materi/file
    * NOTE: Use FormData for file upload
    */
-  const uploadFile = async (materiSectionId: string, file: File): Promise<ApiResponse<MateriFile>> => {
+  const uploadFile = async (materiSectionId: string, file: File): Promise<MateriFile> => {
     const formData = new FormData()
     formData.append('materiSectionId', materiSectionId)
     formData.append('file', file)
@@ -87,10 +87,17 @@ export const useMateriApi = () => {
     const apiBase = config.public.apiBase as string
     const url = `${apiBase}/v1/materi/file`
 
-    const response = await $fetch<ApiResponse<MateriFile>>(url, {
+    // Get token from useTokens
+    const { getAccessToken } = useTokens()
+    const token = getAccessToken()
+
+    const response = await $fetch<MateriFile>(url, {
       method: 'POST',
       body: formData,
       credentials: 'include',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
     })
 
     return response
@@ -106,10 +113,17 @@ export const useMateriApi = () => {
     const apiBase = config.public.apiBase as string
     const url = `${apiBase}/v1/materi/file/download/${id}`
 
+    // Get token from useTokens
+    const { getAccessToken } = useTokens()
+    const token = getAccessToken()
+
     const blob = await $fetch<Blob>(url, {
       method: 'GET',
       credentials: 'include',
       responseType: 'blob',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
     })
 
     return URL.createObjectURL(blob)
@@ -119,7 +133,7 @@ export const useMateriApi = () => {
    * Delete file (Pengajar only)
    * DELETE /materi/file/:id
    */
-  const deleteFile = async (id: string): Promise<ApiResponse<void>> => {
+  const deleteFile = async (id: string): Promise<void> => {
     return api.delete(`materi/file/${id}`)
   }
 

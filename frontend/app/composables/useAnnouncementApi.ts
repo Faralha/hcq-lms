@@ -1,4 +1,3 @@
-import type { ApiResponse } from '~/types/api'
 import type { User } from './useUserApi'
 import type { Kelas } from './useKelasApi'
 
@@ -30,6 +29,24 @@ export interface UpdateAnnouncementRequest {
   isi?: string
 }
 
+export interface GetAnnouncementsParams {
+  page?: number
+  limit?: number
+  search?: string
+}
+
+export interface AnnouncementPaginatedResponse {
+  data: Announcement[]
+  meta: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+  }
+}
+
 export const useAnnouncementApi = () => {
   const api = useApi()
 
@@ -39,16 +56,30 @@ export const useAnnouncementApi = () => {
    * Admin: GLOBAL
    * Pengajar: KELAS
    */
-  const createAnnouncement = async (data: CreateAnnouncementRequest): Promise<ApiResponse<Announcement>> => {
+  const createAnnouncement = async (data: CreateAnnouncementRequest): Promise<Announcement> => {
     return api.post<Announcement>('announcement', data)
   }
 
   /**
    * Get all announcements (filtered by role & enrollment)
-   * GET /announcement
+   * GET /announcement?page=1&limit=10&search=keyword
+   * 
+   * @param params - Query parameters for pagination and search
+   * @param params.page - Page number (default: 1)
+   * @param params.limit - Items per page (default: 10, max: 100)
+   * @param params.search - Search keyword to filter by title (judul) or content (isi), case-insensitive
    */
-  const getAllAnnouncements = async (): Promise<ApiResponse<Announcement[]>> => {
-    return api.get<Announcement[]>('announcement')
+  const getAllAnnouncements = async (params?: GetAnnouncementsParams): Promise<AnnouncementPaginatedResponse> => {
+    const queryParams = new URLSearchParams()
+    
+    if (params?.page) queryParams.append('page', params.page.toString())
+    if (params?.limit) queryParams.append('limit', params.limit.toString())
+    if (params?.search) queryParams.append('search', params.search)
+    
+    const queryString = queryParams.toString()
+    const endpoint = queryString ? `announcement?${queryString}` : 'announcement'
+    
+    return api.get<AnnouncementPaginatedResponse>(endpoint)
   }
 
   /**
@@ -56,7 +87,7 @@ export const useAnnouncementApi = () => {
    * PATCH /announcement/:id
    * Only creator or admin
    */
-  const updateAnnouncement = async (id: string, data: UpdateAnnouncementRequest): Promise<ApiResponse<Announcement>> => {
+  const updateAnnouncement = async (id: string, data: UpdateAnnouncementRequest): Promise<Announcement> => {
     return api.patch<Announcement>(`announcement/${id}`, data)
   }
 
@@ -65,7 +96,7 @@ export const useAnnouncementApi = () => {
    * DELETE /announcement/:id
    * Only creator or admin
    */
-  const deleteAnnouncement = async (id: string): Promise<ApiResponse<void>> => {
+  const deleteAnnouncement = async (id: string): Promise<void> => {
     return api.delete(`announcement/${id}`)
   }
 

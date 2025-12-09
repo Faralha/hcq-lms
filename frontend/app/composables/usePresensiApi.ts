@@ -43,6 +43,16 @@ export interface PresensiSessionDetail {
   records: PresensiRecord[]
 }
 
+export interface PresensiKelasResponse {
+  sessions: Array<{
+    id: string
+    kode: string
+    tanggal: string
+    isActive: boolean
+    records: PresensiRecord[]
+  }>
+}
+
 export const usePresensiApi = () => {
   const api = useApi()
 
@@ -52,6 +62,14 @@ export const usePresensiApi = () => {
    */
   const startKelas = async (kelasId: string): Promise<ApiResponse<StartKelasResponse>> => {
     return api.post<StartKelasResponse>(`presensi/kelas/${kelasId}/mulai`)
+  }
+
+  /**
+   * Stop presensi session (Pengajar only)
+   * POST /presensi/session/:sessionId/stop
+   */
+  const stopSession = async (sessionId: string): Promise<ApiResponse<PresensiSessionDetail>> => {
+    return api.post<PresensiSessionDetail>(`presensi/session/${sessionId}/stop`)
   }
 
   /**
@@ -86,11 +104,22 @@ export const usePresensiApi = () => {
     return api.get<PresensiRecord[]>('presensi/riwayat')
   }
 
+  /**
+   * Get presensi sessions by kelas (Pengajar/Admin)
+   * GET /presensi/kelas/:kelasId
+   * Returns all presensi sessions with their records for a specific kelas
+   */
+  const getPresensiByKelas = async (kelasId: string): Promise<ApiResponse<PresensiKelasResponse>> => {
+    return api.get<PresensiKelasResponse>(`presensi/kelas/${kelasId}`)
+  }
+
   return {
     startKelas,
+    stopSession,
     hadirDenganKode,
     manualPresensi,
     getPresensiBySession,
     getRiwayatPresensi,
+    getPresensiByKelas,
   }
 }
