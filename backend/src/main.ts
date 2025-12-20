@@ -2,6 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -33,6 +35,20 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  // Enable global response transform interceptor
+  app.useGlobalInterceptors(new TransformInterceptor());
+
+  // Swagger setup
+  const config = new DocumentBuilder()
+    .setTitle('HCQ API Documentation')
+    .setDescription('API documentation for the HCQ project')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/v1/docs', app, document);
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
