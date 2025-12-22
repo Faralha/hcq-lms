@@ -39,16 +39,21 @@ async function bootstrap() {
   // Enable global response transform interceptor
   app.useGlobalInterceptors(new TransformInterceptor());
 
-  // Swagger setup
-  const config = new DocumentBuilder()
-    .setTitle('HCQ API Documentation')
-    .setDescription('API documentation for the HCQ project')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
+  // Swagger setup - only in development mode
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('HCQ API Documentation')
+      .setDescription('API documentation for the HCQ project')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/v1/docs', app, document);
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api/v1/docs', app, document);
+    console.log(
+      `📚 Swagger documentation available at: http://localhost:${process.env.PORT || 3000}/api/v1/docs`,
+    );
+  }
 
   const port = process.env.PORT || 3000;
   await app.listen(port);
