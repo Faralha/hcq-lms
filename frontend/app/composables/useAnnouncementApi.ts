@@ -63,7 +63,7 @@ export const useAnnouncementApi = () => {
    */
   const getAllAnnouncements = async (
     params?: GetAnnouncementsParams
-  ): Promise<ApiResponse<AnnouncementPaginatedResponse>> => {
+  ): Promise<ApiResponse<Announcement[]>> => {
     const queryParams = new URLSearchParams();
 
     if (params?.page) queryParams.append("page", params.page.toString());
@@ -75,7 +75,7 @@ export const useAnnouncementApi = () => {
       ? `announcement?${queryString}`
       : "announcement";
 
-    return api.get<ApiResponse<AnnouncementPaginatedResponse>>(endpoint);
+    return api.get<ApiResponse<Announcement[]>>(endpoint);
   };
 
   /**

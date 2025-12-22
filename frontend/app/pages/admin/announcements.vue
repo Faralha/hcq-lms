@@ -9,7 +9,7 @@ import type {
 
 definePageMeta({
   middleware: ['auth', 'admin'],
-  layout: 'default'
+  layout: 'menu'
 })
 
 const UBadge = resolveComponent('UBadge')
@@ -137,12 +137,12 @@ const columns: TableColumn<Announcement>[] = [
         {
           label: 'Edit',
           icon: 'i-lucide-edit',
-          click: () => openEditModal(row.original)
+          onSelect: () => openEditModal(row.original)
         },
         {
           label: 'Delete',
           icon: 'i-lucide-trash',
-          click: () => openDeleteModal(row.original.id),
+          onSelect: () => openDeleteModal(row.original.id),
           class: 'text-error'
         }
       ]
@@ -172,11 +172,13 @@ async function fetchAnnouncements() {
     })
 
     if (response.status === 200 && response.data) {
-      announcements.value = response.data.data
-      totalItems.value = response.data.meta.total
-      totalPages.value = response.data.meta.totalPages
-      hasNextPage.value = response.data.meta.hasNextPage
-      hasPreviousPage.value = response.data.meta.hasPreviousPage
+      announcements.value = response.data
+      if (response.meta) {
+        totalItems.value = response.meta.total
+        totalPages.value = response.meta.totalPages
+        hasNextPage.value = response.meta.hasNextPage
+        hasPreviousPage.value = response.meta.hasPreviousPage
+      }
     }
   } catch (error) {
     console.error('Failed to fetch announcements:', error)
@@ -405,70 +407,105 @@ onMounted(async () => {
     </div>
 
     <!-- Create Modal -->
-    <UModal v-model:open="isCreateModalOpen" title="Buat Announcement" :ui="{ footer: 'flex justify-end gap-2' }">
-      <template #body>
-        <div class="space-y-4">
-          <UFormField label="Judul" required>
-            <UInput v-model="createForm.judul" placeholder="Masukkan judul" />
-          </UFormField>
+    <UModal v-model:open="isCreateModalOpen">
+      <template #content>
+        <UCard>
+          <template #header>
+            <h3 class="text-lg font-semibold">Buat Announcement</h3>
+          </template>
 
-          <UFormField label="Isi" required>
-            <UTextarea v-model="createForm.isi" placeholder="Masukkan isi announcement" :rows="5" />
-          </UFormField>
+          <div class="space-y-4">
+            <UFormField label="Judul" required class="w-full">
+              <UInput v-model="createForm.judul" placeholder="Masukkan judul" class="w-full" />
+            </UFormField>
 
-          <UFormField label="Scope" required>
-            <USelectMenu :model-value="scopeOptions.find(opt => opt.value === createForm.scope)" :items="scopeOptions"
-              value-attribute="value" option-attribute="label"
-              @update:model-value="(val: any) => createForm.scope = val.value" />
-          </UFormField>
+            <UFormField label="Isi" required class="w-full">
+              <UTextarea v-model="createForm.isi" placeholder="Masukkan isi announcement" :rows="5" class="w-full" />
+            </UFormField>
 
-          <UFormField v-if="createForm.scope === 'KELAS'" label="Kelas" required>
-            <USelectMenu :model-value="kelasOptions.find(opt => opt.value === createForm.kelasId)" :items="kelasOptions"
-              value-attribute="value" option-attribute="label" placeholder="Pilih kelas"
-              @update:model-value="(val: any) => createForm.kelasId = val?.value" />
-          </UFormField>
-        </div>
-      </template>
+            <UFormField label="Scope" required class="w-full">
+              <USelectMenu :model-value="scopeOptions.find(opt => opt.value === createForm.scope)" :items="scopeOptions"
+                value-attribute="value" option-attribute="label" class="w-full"
+                @update:model-value="(val: any) => createForm.scope = val.value" />
+            </UFormField>
 
-      <template #footer>
-        <UButton label="Batal" color="neutral" variant="outline" @click="isCreateModalOpen = false" />
-        <UButton label="Simpan" :loading="loading"
-          :disabled="!createForm.judul || !createForm.isi || (createForm.scope === 'KELAS' && !createForm.kelasId)"
-          @click="handleCreate" />
+            <UFormField v-if="createForm.scope === 'KELAS'" label="Kelas" required class="w-full">
+              <USelectMenu :model-value="kelasOptions.find(opt => opt.value === createForm.kelasId)"
+                :items="kelasOptions" value-attribute="value" option-attribute="label" placeholder="Pilih kelas"
+                class="w-full" @update:model-value="(val: any) => createForm.kelasId = val?.value" />
+            </UFormField>
+
+            <div class="w-full flex flex-col items-center gap-3 pt-4">
+              <UButton class="w-full justify-center" :loading="loading"
+                :disabled="!createForm.judul || !createForm.isi || (createForm.scope === 'KELAS' && !createForm.kelasId)"
+                @click="handleCreate">
+                Simpan
+              </UButton>
+              <UButton class="w-full justify-center" color="neutral" variant="outline"
+                @click="isCreateModalOpen = false">
+                Batal
+              </UButton>
+            </div>
+          </div>
+        </UCard>
       </template>
     </UModal>
 
     <!-- Edit Modal -->
-    <UModal v-model:open="isEditModalOpen" title="Edit Announcement" :ui="{ footer: 'flex justify-end gap-2' }">
-      <template #body>
-        <div class="space-y-4">
-          <UFormField label="Judul" required>
-            <UInput v-model="editForm.judul" placeholder="Masukkan judul" />
-          </UFormField>
+    <UModal v-model:open="isEditModalOpen">
+      <template #content>
+        <UCard>
+          <template #header>
+            <h3 class="text-lg font-semibold">Edit Announcement</h3>
+          </template>
 
-          <UFormField label="Isi" required>
-            <UTextarea v-model="editForm.isi" placeholder="Masukkan isi announcement" :rows="5" />
-          </UFormField>
-        </div>
-      </template>
+          <div class="space-y-4">
+            <UFormField label="Judul" required class="w-full">
+              <UInput v-model="editForm.judul" placeholder="Masukkan judul" class="w-full" />
+            </UFormField>
 
-      <template #footer>
-        <UButton label="Batal" color="neutral" variant="outline" @click="isEditModalOpen = false" />
-        <UButton label="Update" :loading="loading" :disabled="!editForm.judul || !editForm.isi" @click="handleUpdate" />
+            <UFormField label="Isi" required class="w-full">
+              <UTextarea v-model="editForm.isi" placeholder="Masukkan isi announcement" :rows="5" class="w-full" />
+            </UFormField>
+
+            <div class="w-full flex flex-col items-center gap-3 pt-4">
+              <UButton class="w-full justify-center" :loading="loading" :disabled="!editForm.judul || !editForm.isi"
+                @click="handleUpdate">
+                Update
+              </UButton>
+              <UButton class="w-full justify-center" color="neutral" variant="outline" @click="isEditModalOpen = false">
+                Batal
+              </UButton>
+            </div>
+          </div>
+        </UCard>
       </template>
     </UModal>
 
     <!-- Delete Modal -->
-    <UModal v-model:open="isDeleteModalOpen" title="Hapus Announcement" :ui="{ footer: 'flex justify-end gap-2' }">
-      <template #body>
-        <p class="text-muted">
-          Apakah Anda yakin ingin menghapus announcement ini? Tindakan ini tidak dapat dibatalkan.
-        </p>
-      </template>
+    <UModal v-model:open="isDeleteModalOpen">
+      <template #content>
+        <UCard>
+          <template #header>
+            <h3 class="text-lg font-semibold">Hapus Announcement</h3>
+          </template>
 
-      <template #footer>
-        <UButton label="Batal" color="neutral" variant="outline" @click="isDeleteModalOpen = false" />
-        <UButton label="Hapus" color="error" :loading="loading" @click="handleDelete" />
+          <div class="space-y-4">
+            <p class="text-muted">
+              Apakah Anda yakin ingin menghapus announcement ini? Tindakan ini tidak dapat dibatalkan.
+            </p>
+
+            <div class="w-full flex flex-col items-center gap-3 pt-2">
+              <UButton class="w-full justify-center" color="error" :loading="loading" @click="handleDelete">
+                Hapus
+              </UButton>
+              <UButton class="w-full justify-center" color="neutral" variant="outline"
+                @click="isDeleteModalOpen = false">
+                Batal
+              </UButton>
+            </div>
+          </div>
+        </UCard>
       </template>
     </UModal>
   </div>
