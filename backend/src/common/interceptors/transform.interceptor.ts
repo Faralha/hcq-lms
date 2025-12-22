@@ -9,7 +9,7 @@ import { map } from 'rxjs/operators';
 import { Response as ExpressResponse } from 'express';
 
 export interface Response<T> {
-  statusCode: number;
+  status: number;
   message: string;
   data: T;
   meta?: any;
@@ -40,7 +40,7 @@ export class TransformInterceptor<T>
         const finalData = hasData && hasMeta ? dataObj.data : data;
 
         return {
-          statusCode: response.statusCode,
+          status: response.statusCode,
           message: 'Success',
           data: finalData as T,
           meta,
