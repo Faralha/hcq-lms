@@ -59,7 +59,7 @@ Complete backend API for Islamic learning management system with comprehensive f
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 24+
 - PostgreSQL 14+
 - pnpm (recommended) or npm
 
