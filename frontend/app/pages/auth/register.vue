@@ -133,7 +133,7 @@ async function onSubmit(payload: FormSubmitEvent<Schema>) {
     // Check if response exists (success case)
     if (response) {
       // Response sukses bisa berupa response.success === true atau langsung data
-      const isSuccess = response.success !== false
+      const isSuccess = response.status === 201 || response.status === 200
 
       if (isSuccess) {
         toast.add({

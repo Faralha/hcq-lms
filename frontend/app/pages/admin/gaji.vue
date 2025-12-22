@@ -282,7 +282,9 @@ async function fetchGaji() {
   isLoading.value = true
   try {
     const response = await getAllGaji()
-    gajiList.value = response
+    if (response.status === 200 && response.data) {
+      gajiList.value = response.data
+    }
   } catch (error: any) {
     console.error('[GAJI] Error:', error)
     toast.add({
@@ -299,8 +301,10 @@ async function fetchGaji() {
 async function fetchPengajar() {
   try {
     const response = await getAllUsers()
-    const users = response
-    pengajarList.value = users.filter(u => u.role === 'PENGAJAR')
+    if (response.status === 200 && response.data) {
+      const users = response.data
+      pengajarList.value = users.filter((u: any) => u.role === 'PENGAJAR')
+    }
   } catch (error) {
     console.error('[PENGAJAR] Error:', error)
   }
@@ -348,14 +352,17 @@ async function onSubmit() {
       status: form.value.status
     }
 
+    let response
     if (isEditing.value) {
-      await updateGaji(form.value.id, {
+      response = await updateGaji(form.value.id, {
         nominal: payload.nominal,
         status: payload.status
       })
     } else {
-      await createGaji(payload)
+      response = await createGaji(payload)
     }
+
+    if (response.status !== 200 && response.status !== 201) throw new Error('Failed to save gaji')
 
     toast.add({
       title: `Gaji ${isEditing.value ? 'updated' : 'created'} successfully`,
@@ -380,8 +387,9 @@ async function onSubmit() {
 async function toggleStatus(gaji: Gaji) {
   try {
     const newStatus = gaji.status === 'LUNAS' ? 'BELUM_LUNAS' : 'LUNAS'
+    const response = await updateGaji(gaji.id, { status: newStatus })
 
-    await updateGaji(gaji.id, { status: newStatus })
+    if (response.status !== 200) throw new Error('Failed to update status')
 
     toast.add({
       title: 'Status updated successfully',
@@ -405,7 +413,8 @@ async function handleDelete(gaji: Gaji) {
   if (!confirmed) return
 
   try {
-    await deleteGaji(gaji.id)
+    const response = await deleteGaji(gaji.id)
+    if (response.status !== 200) throw new Error('Failed to delete gaji')
 
     toast.add({
       title: 'Gaji deleted successfully',

@@ -187,11 +187,11 @@ async function fetchUsers() {
 
     // API returns array directly based on API_DOCUMENTATION.md
     // GET /users returns: [{ id, email, nama, role, ... }]
-    if (Array.isArray(response)) {
-      users.value = response
+    if (response.status === 200 && Array.isArray(response.data)) {
+      users.value = response.data
       // toast.add({
       //   title: 'Users loaded successfully',
-      //   description: `Loaded ${response.length} user(s)`,
+      //   description: `Loaded ${response.data.length} user(s)`,
       //   color: 'success',
       //   icon: 'i-lucide-check-circle'
       // })
@@ -228,7 +228,7 @@ async function handleDelete(user: User) {
   try {
     const response = await deleteUser(user.id)
 
-    if (response.success) {
+    if (response.status === 200) {
       toast.add({
         title: 'User deleted successfully',
         color: 'success',

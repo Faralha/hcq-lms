@@ -1,7 +1,7 @@
-import { defineStore } from 'pinia'
-import type { AuthUser } from '~/types/auth'
+import { defineStore } from "pinia";
+import type { AuthUser } from "~/types/auth";
 
-export const useAuthStore = defineStore('auth', {
+export const useAuthStore = defineStore("auth", {
   state: () => ({
     user: null as AuthUser | null,
     accessToken: null as string | null,
@@ -11,86 +11,94 @@ export const useAuthStore = defineStore('auth', {
   getters: {
     isAuthenticated: (state) => !!state.user && !!state.accessToken,
     userRole: (state) => state.user?.role?.toUpperCase() || null,
-    isAdmin: (state) => state.user?.role?.toUpperCase() === 'ADMIN',
-    isPengajar: (state) => state.user?.role?.toUpperCase() === 'PENGAJAR',
-    isPelajar: (state) => state.user?.role?.toUpperCase() === 'PELAJAR',
+    isAdmin: (state) => state.user?.role?.toUpperCase() === "ADMIN",
+    isPengajar: (state) => state.user?.role?.toUpperCase() === "PENGAJAR",
+    isPelajar: (state) => state.user?.role?.toUpperCase() === "PELAJAR",
   },
 
   actions: {
     setUser(userData: AuthUser | null, accessToken?: string) {
-      this.user = userData
+      this.user = userData;
       if (accessToken) {
-        this.accessToken = accessToken
+        this.accessToken = accessToken;
       }
-      console.log('[authStore] User set:', this.user)
-      console.log('[authStore] Access token:', this.accessToken?.substring(0, 20) + '...')
+      console.log("[authStore] User set:", this.user);
+      console.log(
+        "[authStore] Access token:",
+        this.accessToken?.substring(0, 20) + "..."
+      );
     },
 
     setAccessToken(token: string) {
-      this.accessToken = token
-      console.log('[authStore] Access token updated')
+      this.accessToken = token;
+      console.log("[authStore] Access token updated");
     },
 
     clearAuth() {
-      this.user = null
-      this.accessToken = null
-      console.log('[authStore] Auth cleared')
+      this.user = null;
+      this.accessToken = null;
+      console.log("[authStore] Auth cleared");
     },
 
     async fetchUser() {
-      if (this.isLoading) return
+      if (this.isLoading) return;
 
-      this.isLoading = true
+      this.isLoading = true;
       try {
-        const authApi = useAuthApi()
-        const response = await authApi.getCurrentUser()
+        const authApi = useAuthApi();
+        const response = await authApi.getCurrentUser();
 
-        console.log('[authStore] fetchUser response:', JSON.stringify(response, null, 2))
+        console.log(
+          "[authStore] fetchUser response:",
+          JSON.stringify(response, null, 2)
+        );
 
         // Handle different response structures
-        let userData: AuthUser | null = null
-        const res = response as any
+        let userData: AuthUser | null = null;
+        const res = response as any;
 
-        if (res?.id && res?.email) {
-          userData = res
+        if (res?.status && res?.data) {
+          userData = res.data;
+        } else if (res?.id && res?.email) {
+          userData = res;
         } else if (res?.data?.id && res?.data?.email) {
-          userData = res.data
+          userData = res.data;
         } else if (res?.data?.data?.id && res?.data?.data?.email) {
-          userData = res.data.data
+          userData = res.data.data;
         }
 
         if (userData && userData.id) {
-          this.user = userData
+          this.user = userData;
         } else {
-          console.warn('[authStore] No valid user data found in response')
-          this.user = null
+          console.warn("[authStore] No valid user data found in response");
+          this.user = null;
         }
       } catch (error: any) {
-        console.error('[authStore] Failed to fetch user:', error)
-        
+        console.error("[authStore] Failed to fetch user:", error);
+
         if (error?.statusCode !== 401) {
-          this.clearAuth()
+          this.clearAuth();
         }
       } finally {
-        this.isLoading = false
+        this.isLoading = false;
       }
     },
 
     async logout() {
       try {
-        const authApi = useAuthApi()
-        await authApi.logout()
+        const authApi = useAuthApi();
+        await authApi.logout();
       } catch (error) {
-        console.error('[authStore] Logout error:', error)
+        console.error("[authStore] Logout error:", error);
       } finally {
-        this.clearAuth()
-        navigateTo('/auth/login')
+        this.clearAuth();
+        navigateTo("/auth/login");
       }
     },
   },
 
   persist: {
     storage: import.meta.client ? localStorage : undefined,
-    paths: ['user', 'accessToken'],
+    paths: ["user", "accessToken"],
   },
-})
+});

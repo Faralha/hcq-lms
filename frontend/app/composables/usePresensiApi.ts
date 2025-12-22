@@ -1,117 +1,127 @@
-import type { ApiResponse } from '~/types/api'
-import type { User } from './useUserApi'
-import type { Kelas } from './useKelasApi'
+import type { ApiResponse } from "~/types/api";
+import type {
+  User,
+  Kelas,
+  PresensiSession,
+  PresensiRecord,
+} from "~/types/entities";
+
+export type { PresensiSession, PresensiRecord } from "~/types/entities";
 
 /**
  * Presensi API Wrapper
  */
 
-export interface PresensiSession {
-  id: string
-  kode: string
-  tanggal: string
-  isActive: boolean
-  kelas: Kelas
-}
-
-export interface PresensiRecord {
-  id: string
-  status: 'HADIR' | 'IZIN' | 'SAKIT' | 'ALFA'
-  timestamp: string
-  user: User
-  presensiSession?: PresensiSession
-}
-
 export interface StartKelasResponse {
-  message: string
-  kode: string
-  expiresAt: string
-  session: PresensiSession
+  message: string;
+  kode: string;
+  expiresAt: string;
+  session: PresensiSession;
 }
 
 export interface HadirRequest {
-  kodePresensi: string
+  kodePresensi: string;
 }
 
 export interface ManualPresensiRequest {
-  pelajarId: string
-  status: 'HADIR' | 'IZIN' | 'SAKIT' | 'ALFA'
+  pelajarId: string;
+  status: "HADIR" | "IZIN" | "SAKIT" | "ALFA";
 }
 
 export interface PresensiSessionDetail {
-  session: PresensiSession
-  records: PresensiRecord[]
+  session: PresensiSession;
+  records: PresensiRecord[];
 }
 
 export interface PresensiKelasResponse {
   sessions: Array<{
-    id: string
-    kode: string
-    tanggal: string
-    isActive: boolean
-    records: PresensiRecord[]
-  }>
+    id: string;
+    kode: string;
+    tanggal: string;
+    isActive: boolean;
+    records: PresensiRecord[];
+  }>;
 }
 
 export const usePresensiApi = () => {
-  const api = useApi()
+  const api = useApi();
 
   /**
    * Start kelas & generate code (Pengajar only)
    * POST /presensi/kelas/:kelasId/mulai
    */
-  const startKelas = async (kelasId: string): Promise<ApiResponse<StartKelasResponse>> => {
-    return api.post<StartKelasResponse>(`presensi/kelas/${kelasId}/mulai`)
-  }
+  const startKelas = async (
+    kelasId: string
+  ): Promise<ApiResponse<StartKelasResponse>> => {
+    return api.post<StartKelasResponse>(`presensi/kelas/${kelasId}/mulai`);
+  };
 
   /**
    * Stop presensi session (Pengajar only)
    * POST /presensi/session/:sessionId/stop
    */
-  const stopSession = async (sessionId: string): Promise<ApiResponse<PresensiSessionDetail>> => {
-    return api.post<PresensiSessionDetail>(`presensi/session/${sessionId}/stop`)
-  }
+  const stopSession = async (
+    sessionId: string
+  ): Promise<ApiResponse<PresensiSessionDetail>> => {
+    return api.post<PresensiSessionDetail>(
+      `presensi/session/${sessionId}/stop`
+    );
+  };
 
   /**
    * Pelajar hadir dengan kode
    * POST /presensi/hadir
    */
-  const hadirDenganKode = async (data: HadirRequest): Promise<ApiResponse<{ message: string; record: PresensiRecord }>> => {
-    return api.post(`presensi/hadir`, data)
-  }
+  const hadirDenganKode = async (
+    data: HadirRequest
+  ): Promise<ApiResponse<{ message: string; record: PresensiRecord }>> => {
+    return api.post(`presensi/hadir`, data);
+  };
 
   /**
    * Manual presensi (Pengajar only)
    * POST /presensi/session/:sessionId/manual
    */
-  const manualPresensi = async (sessionId: string, data: ManualPresensiRequest): Promise<ApiResponse<PresensiRecord>> => {
-    return api.post<PresensiRecord>(`presensi/session/${sessionId}/manual`, data)
-  }
+  const manualPresensi = async (
+    sessionId: string,
+    data: ManualPresensiRequest
+  ): Promise<ApiResponse<PresensiRecord>> => {
+    return api.post<PresensiRecord>(
+      `presensi/session/${sessionId}/manual`,
+      data
+    );
+  };
 
   /**
    * Get presensi by session (Pengajar/Admin)
    * GET /presensi/session/:sessionId
    */
-  const getPresensiBySession = async (sessionId: string): Promise<ApiResponse<PresensiSessionDetail>> => {
-    return api.get<PresensiSessionDetail>(`presensi/session/${sessionId}`)
-  }
+  const getPresensiBySession = async (
+    sessionId: string
+  ): Promise<ApiResponse<PresensiSessionDetail>> => {
+    return api.get<PresensiSessionDetail>(`presensi/session/${sessionId}`);
+  };
 
   /**
    * Get riwayat presensi (Pelajar)
    * GET /presensi/riwayat
    */
-  const getRiwayatPresensi = async (): Promise<ApiResponse<PresensiRecord[]>> => {
-    return api.get<PresensiRecord[]>('presensi/riwayat')
-  }
+  const getRiwayatPresensi = async (): Promise<
+    ApiResponse<PresensiRecord[]>
+  > => {
+    return api.get<PresensiRecord[]>("presensi/riwayat");
+  };
 
   /**
    * Get presensi sessions by kelas (Pengajar/Admin)
    * GET /presensi/kelas/:kelasId
    * Returns all presensi sessions with their records for a specific kelas
    */
-  const getPresensiByKelas = async (kelasId: string): Promise<ApiResponse<PresensiKelasResponse>> => {
-    return api.get<PresensiKelasResponse>(`presensi/kelas/${kelasId}`)
-  }
+  const getPresensiByKelas = async (
+    kelasId: string
+  ): Promise<ApiResponse<PresensiKelasResponse>> => {
+    return api.get<PresensiKelasResponse>(`presensi/kelas/${kelasId}`);
+  };
 
   return {
     startKelas,
@@ -121,5 +131,5 @@ export const usePresensiApi = () => {
     getPresensiBySession,
     getRiwayatPresensi,
     getPresensiByKelas,
-  }
-}
+  };
+};

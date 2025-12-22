@@ -1,23 +1,25 @@
 // API Response Types
 export interface ApiResponse<T = any> {
-  success: boolean
-  data?: T
+  status: number
   message?: string
-  errors?: Record<string, string[]>
+  data?: T
+  meta?: PaginationMeta
 }
 
 export interface ApiError {
-  statusCode: number
+  status: number
   message: string
-  errors?: Record<string, string[]>
+  errors?: any
 }
 
 // Pagination Types
 export interface PaginationMeta {
-  currentPage: number
-  perPage: number
+  page: number
+  limit: number
   total: number
   totalPages: number
+  hasNextPage: boolean
+  hasPreviousPage: boolean
 }
 
 export interface PaginatedResponse<T> extends ApiResponse<T[]> {

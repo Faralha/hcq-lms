@@ -215,7 +215,9 @@ async function fetchSemesters() {
   isLoading.value = true
   try {
     const response = await getAllSemesters()
-    semesters.value = response
+    if (response.status === 200 && response.data) {
+      semesters.value = response.data
+    }
   } catch (error: any) {
     console.error('[SEMESTERS] Error:', error)
     toast.add({
@@ -251,11 +253,14 @@ async function onSubmit() {
       status: form.value.status
     }
 
+    let response
     if (isEditing.value) {
-      await updateSemester(form.value.id, payload)
+      response = await updateSemester(form.value.id, payload)
     } else {
-      await createSemester(payload)
+      response = await createSemester(payload)
     }
+
+    if (response.status !== 200 && response.status !== 201) throw new Error('Failed to save semester')
 
     toast.add({
       title: `Semester ${isEditing.value ? 'updated' : 'created'} successfully`,
@@ -294,7 +299,8 @@ async function handleDelete(semester: Semester) {
   if (!confirmed) return
 
   try {
-    await deleteSemester(semester.id)
+    const response = await deleteSemester(semester.id)
+    if (response.status !== 200) throw new Error('Failed to delete semester')
 
     toast.add({
       title: 'Semester deleted successfully',

@@ -100,12 +100,17 @@ const stats = ref({
 async function fetchDashboardStats() {
   try {
     // Fetch all data in parallel
-    const [semesters, classes, users, subjects] = await Promise.all([
+    const [semestersRes, classesRes, usersRes, subjectsRes] = await Promise.all([
       getAllSemesters(),
       getAllKelas(),
       getAllUsers(),
       getAllMataPelajaran()
     ])
+
+    const semesters = semestersRes.status === 200 && semestersRes.data ? semestersRes.data : []
+    const classes = classesRes.status === 200 && classesRes.data ? classesRes.data : []
+    const users = usersRes.status === 200 && usersRes.data ? usersRes.data : []
+    const subjects = subjectsRes.status === 200 && subjectsRes.data ? subjectsRes.data : []
 
     // Find active and upcoming semester
     const activeSemester = semesters.find(s => s.status === 'AKTIF')

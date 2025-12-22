@@ -323,7 +323,9 @@ async function fetchKelas() {
   isLoading.value = true
   try {
     const response = await getAllKelas()
-    kelasList.value = response
+    if (response.status === 200 && response.data) {
+      kelasList.value = response.data
+    }
   } catch (error: any) {
     console.error('[KELAS] Error:', error)
     toast.add({
@@ -340,9 +342,11 @@ async function fetchKelas() {
 async function fetchSemesters() {
   try {
     const response = await getAllSemesters()
-    semesters.value = response
-    console.log('[SEMESTERS] Fetched:', response)
-    console.log('[SEMESTERS] Options:', semesterOptions.value)
+    if (response.status === 200 && response.data) {
+      semesters.value = response.data
+      console.log('[SEMESTERS] Fetched:', response.data)
+      console.log('[SEMESTERS] Options:', semesterOptions.value)
+    }
   } catch (error) {
     console.error('[SEMESTERS] Error:', error)
   }
@@ -351,7 +355,9 @@ async function fetchSemesters() {
 async function fetchMataPelajaran() {
   try {
     const response = await getAllMataPelajaran()
-    mataPelajaranList.value = response
+    if (response.status === 200 && response.data) {
+      mataPelajaranList.value = response.data
+    }
   } catch (error) {
     console.error('[MATA PELAJARAN] Error:', error)
   }
@@ -360,7 +366,9 @@ async function fetchMataPelajaran() {
 async function fetchUsers() {
   try {
     const response = await getAllUsers()
-    users.value = response
+    if (response.status === 200 && response.data) {
+      users.value = response.data
+    }
   } catch (error) {
     console.error('[USERS] Error:', error)
   }
@@ -421,11 +429,14 @@ async function onSubmit() {
 
     console.log('Submitting kelas with payload:', payload)
 
+    let response
     if (isEditing.value) {
-      await updateKelas(form.value.id, payload)
+      response = await updateKelas(form.value.id, payload)
     } else {
-      await createKelas(payload)
+      response = await createKelas(payload)
     }
+
+    if (response.status !== 200 && response.status !== 201) throw new Error('Failed to save kelas')
 
     toast.add({
       title: `Kelas ${isEditing.value ? 'updated' : 'created'} successfully`,
@@ -454,11 +465,14 @@ async function handleEnroll(type: 'PELAJAR' | 'PENGAJAR') {
 
   isEnrolling.value = true
   try {
+    let response
     if (type === 'PELAJAR') {
-      await enrollPelajar(selectedKelas.value.id, { pelajarId: userId })
+      response = await enrollPelajar(selectedKelas.value.id, { pelajarId: userId })
     } else {
-      await assignPengajar(selectedKelas.value.id, { pengajarId: userId })
+      response = await assignPengajar(selectedKelas.value.id, { pengajarId: userId })
     }
+
+    if (response.status !== 200 && response.status !== 201) throw new Error('Failed to enroll user')
 
     toast.add({
       title: `${type} enrolled successfully`,
@@ -489,7 +503,6 @@ async function handleEnroll(type: 'PELAJAR' | 'PENGAJAR') {
     isEnrolling.value = false
   }
 }
-
 async function handleUnenroll(userId: string) {
   if (!selectedKelas.value) return
 
@@ -497,7 +510,8 @@ async function handleUnenroll(userId: string) {
   if (!confirmed) return
 
   try {
-    await unenrollUser(selectedKelas.value.id, userId)
+    const response = await unenrollUser(selectedKelas.value.id, userId)
+    if (response.status !== 200) throw new Error('Failed to unenroll user')
 
     toast.add({
       title: 'User unenrolled successfully',
@@ -525,7 +539,8 @@ async function handleDelete(kelas: KelasType) {
   if (!confirmed) return
 
   try {
-    await deleteKelas(kelas.id)
+    const response = await deleteKelas(kelas.id)
+    if (response.status !== 200) throw new Error('Failed to delete kelas')
 
     toast.add({
       title: 'Kelas deleted successfully',

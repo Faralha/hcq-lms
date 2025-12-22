@@ -282,7 +282,9 @@ async function fetchSpp() {
   isLoading.value = true
   try {
     const response = await getAllSpp()
-    sppList.value = response
+    if (response.status === 200 && response.data) {
+      sppList.value = response.data
+    }
   } catch (error: any) {
     console.error('[SPP] Error:', error)
     toast.add({
@@ -299,8 +301,10 @@ async function fetchSpp() {
 async function fetchPelajar() {
   try {
     const response = await getAllUsers()
-    const users = response
-    pelajarList.value = users.filter(u => u.role === 'PELAJAR')
+    if (response.status === 200 && response.data) {
+      const users = response.data
+      pelajarList.value = users.filter((u: any) => u.role === 'PELAJAR')
+    }
   } catch (error) {
     console.error('[PELAJAR] Error:', error)
   }
@@ -348,14 +352,17 @@ async function onSubmit() {
       status: form.value.status
     }
 
+    let response
     if (isEditing.value) {
-      await updateSpp(form.value.id, {
+      response = await updateSpp(form.value.id, {
         nominal: payload.nominal,
         status: payload.status
       })
     } else {
-      await createSpp(payload)
+      response = await createSpp(payload)
     }
+
+    if (response.status !== 200 && response.status !== 201) throw new Error('Failed to save tagihan')
 
     toast.add({
       title: `Tagihan SPP ${isEditing.value ? 'updated' : 'created'} successfully`,
@@ -380,8 +387,9 @@ async function onSubmit() {
 async function toggleStatus(spp: Spp) {
   try {
     const newStatus = spp.status === 'LUNAS' ? 'BELUM_LUNAS' : 'LUNAS'
+    const response = await updateSpp(spp.id, { status: newStatus })
 
-    await updateSpp(spp.id, { status: newStatus })
+    if (response.status !== 200) throw new Error('Failed to update status')
 
     toast.add({
       title: 'Status updated successfully',
@@ -405,7 +413,8 @@ async function handleDelete(spp: Spp) {
   if (!confirmed) return
 
   try {
-    await deleteSpp(spp.id)
+    const response = await deleteSpp(spp.id)
+    if (response.status !== 200) throw new Error('Failed to delete tagihan')
 
     toast.add({
       title: 'Tagihan SPP deleted successfully',

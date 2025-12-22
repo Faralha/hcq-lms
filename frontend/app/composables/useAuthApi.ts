@@ -8,32 +8,36 @@ import type {
   ResetPasswordRequest,
   AuthUser,
   InvitePengajarRequest,
-  InvitePengajarResponse
-} from '~/types/auth'
-import type { ApiResponse } from '~/types/api'
+  InvitePengajarResponse,
+} from "~/types/auth";
+import type { ApiResponse } from "~/types/api";
 
 /**
  * Auth API wrapper
  * Handles all authentication-related API calls
  */
 export const useAuthApi = () => {
-  const api = useApi()
+  const api = useApi();
 
   /**
    * Login user
    * POST /v1/auth/login
    */
-  const login = async (credentials: LoginRequest): Promise<ApiResponse<LoginResponse>> => {
-    return api.post<LoginResponse>('auth/login', credentials)
-  }
+  const login = async (
+    credentials: LoginRequest
+  ): Promise<ApiResponse<LoginResponse>> => {
+    return api.post<ApiResponse<LoginResponse>>("auth/login", credentials);
+  };
 
   /**
    * Register new user
    * POST /v1/auth/register
    */
-  const register = async (data: RegisterRequest): Promise<ApiResponse<RegisterResponse>> => {
-    return api.post<RegisterResponse>('auth/register', data)
-  }
+  const register = async (
+    data: RegisterRequest
+  ): Promise<ApiResponse<RegisterResponse>> => {
+    return api.post<ApiResponse<RegisterResponse>>("auth/register", data);
+  };
 
   /**
    * Logout current user
@@ -41,8 +45,8 @@ export const useAuthApi = () => {
    * Note: Refresh token is sent automatically via httpOnly cookie
    */
   const logout = async (): Promise<ApiResponse<LogoutResponse>> => {
-    return api.post<LogoutResponse>('auth/logout')
-  }
+    return api.post<ApiResponse<LogoutResponse>>("auth/logout");
+  };
 
   /**
    * Get current authenticated user
@@ -50,8 +54,8 @@ export const useAuthApi = () => {
    * Requires: Access token in Authorization header
    */
   const getCurrentUser = async (): Promise<ApiResponse<AuthUser>> => {
-    return api.get<AuthUser>('auth/me')
-  }
+    return api.get<ApiResponse<AuthUser>>("auth/me");
+  };
 
   /**
    * Refresh authentication token
@@ -60,64 +64,91 @@ export const useAuthApi = () => {
    * Returns new accessToken and refreshToken
    */
   const refreshToken = async (): Promise<ApiResponse<LoginResponse>> => {
-    return api.post<LoginResponse>('auth/refresh')
-  }
+    return api.post<ApiResponse<LoginResponse>>("auth/refresh");
+  };
 
   /**
    * Request password reset
    * POST /v1/auth/forgot-password
    */
-  const forgotPassword = async (data: ForgotPasswordRequest): Promise<ApiResponse<{ message: string }>> => {
-    return api.post('auth/forgot-password', data)
-  }
+  const forgotPassword = async (
+    data: ForgotPasswordRequest
+  ): Promise<ApiResponse<{ message: string }>> => {
+    return api.post<ApiResponse<{ message: string }>>(
+      "auth/forgot-password",
+      data
+    );
+  };
 
   /**
    * Reset password with token
    * POST /v1/auth/reset-password
    */
-  const resetPassword = async (data: ResetPasswordRequest): Promise<ApiResponse<{ message: string }>> => {
-    return api.post('auth/reset-password', data)
-  }
+  const resetPassword = async (
+    data: ResetPasswordRequest
+  ): Promise<ApiResponse<{ message: string }>> => {
+    return api.post<ApiResponse<{ message: string }>>(
+      "auth/reset-password",
+      data
+    );
+  };
 
   /**
    * Verify email with token
    * POST /v1/auth/verify-email
    */
-  const verifyEmail = async (token: string): Promise<ApiResponse<{ message: string }>> => {
-    return api.post('auth/verify-email', { token })
-  }
+  const verifyEmail = async (
+    token: string
+  ): Promise<ApiResponse<{ message: string }>> => {
+    return api.post<ApiResponse<{ message: string }>>("auth/verify-email", {
+      token,
+    });
+  };
 
   /**
    * Resend email verification
    * POST /v1/auth/resend-verification
    */
-  const resendVerification = async (email: string): Promise<ApiResponse<{ message: string }>> => {
-    return api.post('auth/resend-verification', { email })
-  }
+  const resendVerification = async (
+    email: string
+  ): Promise<ApiResponse<{ message: string }>> => {
+    return api.post<ApiResponse<{ message: string }>>(
+      "auth/resend-verification",
+      { email }
+    );
+  };
 
   /**
    * Invite pengajar (Admin only)
    * POST /v1/auth/invite-pengajar
-   * 
+   *
    * @param email - Email address of the teacher to invite
    * @returns Promise with invitation details including magic link
-   * 
+   *
    * @example
    * const { invitePengajar } = useAuthApi()
    * const response = await invitePengajar('teacher@hcq.com')
    * console.log(response.magicLink) // Share this link with the teacher
    */
-  const invitePengajar = async (email: string): Promise<ApiResponse<InvitePengajarResponse>> => {
-    return api.post<InvitePengajarResponse>('auth/invite-pengajar', { email })
-  }
+  const invitePengajar = async (
+    email: string
+  ): Promise<ApiResponse<InvitePengajarResponse>> => {
+    return api.post<ApiResponse<InvitePengajarResponse>>(
+      "auth/invite-pengajar",
+      { email }
+    );
+  };
 
   /**
    * Change password
    * PATCH /v1/auth/change-password
    */
-  const changePassword = async (oldPassword: string, newPassword: string): Promise<ApiResponse<{ message: string }>> => {
-    return api.patch('auth/change-password', { oldPassword, newPassword })
-  }
+  const changePassword = async (
+    oldPassword: string,
+    newPassword: string
+  ): Promise<ApiResponse<{ message: string }>> => {
+    return api.patch("auth/change-password", { oldPassword, newPassword });
+  };
 
   return {
     login,
@@ -131,5 +162,5 @@ export const useAuthApi = () => {
     resendVerification,
     invitePengajar,
     changePassword,
-  }
-}
+  };
+};

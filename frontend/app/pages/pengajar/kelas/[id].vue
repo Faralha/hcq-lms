@@ -448,7 +448,9 @@ async function fetchKelasDetail() {
     console.log('[KELAS DETAIL] Response type:', typeof response)
 
     // API returns Kelas object directly, not wrapped in ApiResponse
-    kelasDetail.value = response
+    if (response.status === 200 && response.data) {
+      kelasDetail.value = response.data
+    }
   } catch (error: any) {
     console.error('[KELAS DETAIL] Error:', error)
     toast.add({
@@ -473,18 +475,11 @@ async function fetchPresensiSessions() {
     // Check multiple response formats
     let sessionsData: any[] = []
 
-    if (response && typeof response === 'object') {
-      // Format 1: { success, data: { sessions } }
-      if ('success' in response && response.success && response.data?.sessions) {
+    if (response.status === 200 && response.data) {
+      if (Array.isArray(response.data)) {
+        sessionsData = response.data
+      } else if (response.data.sessions) {
         sessionsData = response.data.sessions
-      }
-      // Format 2: { sessions } directly
-      else if ('sessions' in response && Array.isArray(response.sessions)) {
-        sessionsData = response.sessions
-      }
-      // Format 3: Array directly
-      else if (Array.isArray(response)) {
-        sessionsData = response
       }
     }
 
@@ -494,10 +489,14 @@ async function fetchPresensiSessions() {
     if (sessionsData.length > 0) {
       presensiSessions.value = sessionsData.map(session => ({
         id: session.id,
+        kelasId: session.kelasId || kelasId.value,
         kode: session.kode,
         tanggal: session.createdAt || session.tanggal,
+        expiresAt: session.expiresAt || '',
         isActive: session.isActive ?? (new Date(session.expiresAt) > new Date()),
-        kelas: kelasDetail.value!
+        kelas: kelasDetail.value!,
+        createdAt: session.createdAt || '',
+        updatedAt: session.updatedAt || ''
       }))
 
       // Find active session
@@ -538,7 +537,7 @@ async function handleStartSession() {
 
     console.log('[START SESSION] Response:', response)
 
-    if (response.success && response.data) {
+    if (response.status === 200 && response.data) {
       activeSession.value = response.data.session
       presensiSessions.value.unshift(response.data.session)
 
@@ -577,7 +576,7 @@ async function handleStopSession() {
 
     console.log('[STOP SESSION] Response:', response)
 
-    if (response.success) {
+    if (response.status === 200) {
       toast.add({
         title: 'Sesi dihentikan',
         description: 'Sesi presensi telah berhasil dihentikan',
@@ -616,7 +615,7 @@ async function fetchPresensiRecords(sessionId: string) {
 
     console.log('[PRESENSI RECORDS] Response:', response)
 
-    if (response.success && response.data) {
+    if (response.status === 200 && response.data) {
       presensiRecords.value = response.data.records || []
     }
   } catch (error: any) {
@@ -643,7 +642,7 @@ async function handleUpdateStatus(record: PresensiRecord, newStatus: PresensiRec
 
     console.log('[UPDATE STATUS] Response:', response)
 
-    if (response.success) {
+    if (response.status === 200) {
       // Update local state
       const index = presensiRecords.value.findIndex(r => r.id === record.id)
       if (index !== -1 && presensiRecords.value[index]) {
@@ -696,7 +695,9 @@ async function fetchMateriSections() {
     console.log('[MATERI] Response:', response)
 
     // API returns array directly (like useKelasApi)
-    materiSections.value = response
+    if (response.status === 200 && response.data) {
+      materiSections.value = response.data
+    }
   } catch (error: any) {
     console.error('[MATERI] Error:', error)
     toast.add({
@@ -736,15 +737,19 @@ async function handleCreateSection() {
 
     console.log('[CREATE SECTION] Response:', response)
 
-    toast.add({
-      title: 'Section berhasil dibuat',
-      description: 'Section materi telah ditambahkan',
-      color: 'success',
-      icon: 'i-lucide-check-circle'
-    })
+    if (response.status === 200 || response.status === 201) {
+      toast.add({
+        title: 'Section berhasil dibuat',
+        description: 'Section materi telah ditambahkan',
+        color: 'success',
+        icon: 'i-lucide-check-circle'
+      })
 
-    isCreateSectionModalOpen.value = false
-    await fetchMateriSections()
+      isCreateSectionModalOpen.value = false
+      await fetchMateriSections()
+    } else {
+      throw new Error('Failed to create section')
+    }
   } catch (error: any) {
     console.error('[CREATE SECTION] Error:', error)
     toast.add({
@@ -771,7 +776,11 @@ async function handleUploadFile(files: File[]) {
 
   console.log('[UPLOAD FILE] Uploading:', file.name)
 
-  await uploadFile(currentSectionId.value, file)
+  const response = await uploadFile(currentSectionId.value, file)
+
+  if (response && response.status !== 200 && response.status !== 201) {
+    throw new Error(response.message || 'Upload failed')
+  }
 }
 
 function onUploadSuccess(files: File[]) {
@@ -826,22 +835,25 @@ async function handleDownloadFile(fileId: string, filename: string) {
       icon: 'i-lucide-alert-circle'
     })
   }
-}
-
-async function handleDeleteFile(fileId: string) {
-  if (!confirm('Apakah Anda yakin ingin menghapus file ini?')) return
+} async function handleDeleteFile(fileId: string) {
+  const confirmed = confirm('Yakin ingin menghapus file ini?')
+  if (!confirmed) return
 
   try {
-    await deleteFile(fileId)
+    const response = await deleteFile(fileId)
 
-    toast.add({
-      title: 'File dihapus',
-      description: 'File telah dihapus',
-      color: 'success',
-      icon: 'i-lucide-trash-2'
-    })
+    if (response.status === 200) {
+      toast.add({
+        title: 'File dihapus',
+        description: 'File telah dihapus',
+        color: 'success',
+        icon: 'i-lucide-trash-2'
+      })
 
-    await fetchMateriSections()
+      await fetchMateriSections()
+    } else {
+      throw new Error('Failed to delete file')
+    }
   } catch (error: any) {
     console.error('[DELETE FILE] Error:', error)
     toast.add({
@@ -854,19 +866,24 @@ async function handleDeleteFile(fileId: string) {
 }
 
 async function handleDeleteSection(sectionId: string) {
-  if (!confirm('Apakah Anda yakin ingin menghapus section ini? Semua file di dalamnya akan ikut terhapus.')) return
+  const confirmed = confirm('Yakin ingin menghapus section ini? Semua file di dalamnya akan ikut terhapus.')
+  if (!confirmed) return
 
   try {
-    await deleteSection(sectionId)
+    const response = await deleteSection(sectionId)
 
-    toast.add({
-      title: 'Section dihapus',
-      description: 'Section materi telah dihapus',
-      color: 'success',
-      icon: 'i-lucide-trash-2'
-    })
+    if (response.status === 200) {
+      toast.add({
+        title: 'Section dihapus',
+        description: 'Section materi telah dihapus',
+        color: 'success',
+        icon: 'i-lucide-trash-2'
+      })
 
-    await fetchMateriSections()
+      await fetchMateriSections()
+    } else {
+      throw new Error('Failed to delete section')
+    }
   } catch (error: any) {
     console.error('[DELETE SECTION] Error:', error)
     toast.add({

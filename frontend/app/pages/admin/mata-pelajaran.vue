@@ -189,7 +189,9 @@ async function fetchMataPelajaran() {
   isLoading.value = true
   try {
     const response = await getAllMataPelajaran()
-    mataPelajaran.value = response
+    if (response.status === 200 && response.data) {
+      mataPelajaran.value = response.data
+    }
   } catch (error: any) {
     console.error('[MATA PELAJARAN] Error:', error)
     toast.add({
@@ -244,11 +246,14 @@ async function onSubmit() {
       deskripsi: form.value.deskripsi || undefined
     }
 
+    let response
     if (isEditing.value) {
-      await updateMataPelajaran(form.value.id, payload)
+      response = await updateMataPelajaran(form.value.id, payload)
     } else {
-      await createMataPelajaran(payload)
+      response = await createMataPelajaran(payload)
     }
+
+    if (response.status !== 200 && response.status !== 201) throw new Error('Failed to save mata pelajaran')
 
     toast.add({
       title: `Mata pelajaran ${isEditing.value ? 'updated' : 'created'} successfully`,
@@ -275,7 +280,8 @@ async function handleDelete(mp: MataPelajaran) {
   if (!confirmed) return
 
   try {
-    await deleteMataPelajaran(mp.id)
+    const response = await deleteMataPelajaran(mp.id)
+    if (response.status !== 200) throw new Error('Failed to delete mata pelajaran')
 
     toast.add({
       title: 'Mata pelajaran deleted successfully',

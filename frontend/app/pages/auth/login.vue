@@ -97,7 +97,13 @@ async function onSubmit(payload: FormSubmitEvent<Schema>) {
     const res = response as any
 
     // Try to extract data from different structures
-    if (res.accessToken) {
+    if (res.status === 200 && res.data) {
+      // New standard structure: { status: 200, data: { accessToken, refreshToken, user } }
+      accessToken = res.data.accessToken
+      refreshToken = res.data.refreshToken
+      userData = res.data.user
+      console.log('[Login] Using standard response structure')
+    } else if (res.accessToken) {
       // Direct structure: { accessToken, refreshToken, user }
       accessToken = res.accessToken
       refreshToken = res.refreshToken

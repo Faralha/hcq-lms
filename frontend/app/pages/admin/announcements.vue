@@ -171,11 +171,13 @@ async function fetchAnnouncements() {
       search: searchTerm.value || undefined
     })
 
-    announcements.value = response.data
-    totalItems.value = response.meta.total
-    totalPages.value = response.meta.totalPages
-    hasNextPage.value = response.meta.hasNextPage
-    hasPreviousPage.value = response.meta.hasPreviousPage
+    if (response.status === 200 && response.data) {
+      announcements.value = response.data.data
+      totalItems.value = response.data.meta.total
+      totalPages.value = response.data.meta.totalPages
+      hasNextPage.value = response.data.meta.hasNextPage
+      hasPreviousPage.value = response.data.meta.hasPreviousPage
+    }
   } catch (error) {
     console.error('Failed to fetch announcements:', error)
     useToast().add({
@@ -191,7 +193,10 @@ async function fetchAnnouncements() {
 // Fetch kelas list for dropdown
 async function fetchKelasList() {
   try {
-    kelasList.value = await getAllKelas()
+    const response = await getAllKelas()
+    if (response.status === 200 && response.data) {
+      kelasList.value = response.data
+    }
   } catch (error) {
     console.error('Failed to fetch kelas:', error)
   }
@@ -201,7 +206,8 @@ async function fetchKelasList() {
 async function handleCreate() {
   loading.value = true
   try {
-    await createAnnouncement(createForm.value)
+    const response = await createAnnouncement(createForm.value)
+    if (response.status !== 201 && response.status !== 200) throw new Error('Failed to create announcement')
 
     useToast().add({
       title: 'Success',
@@ -229,7 +235,8 @@ async function handleUpdate() {
   loading.value = true
   try {
     const { id, ...data } = editForm.value
-    await updateAnnouncement(id, data)
+    const response = await updateAnnouncement(id, data)
+    if (response.status !== 200) throw new Error('Failed to update announcement')
 
     useToast().add({
       title: 'Success',
@@ -255,7 +262,8 @@ async function handleUpdate() {
 async function handleDelete() {
   loading.value = true
   try {
-    await deleteAnnouncement(deleteId.value)
+    const response = await deleteAnnouncement(deleteId.value)
+    if (response.status !== 200) throw new Error('Failed to delete announcement')
 
     useToast().add({
       title: 'Success',

@@ -62,17 +62,20 @@ async function fetchData() {
     console.log('[KELAS] Fetching data...')
 
     // Fetch in parallel
-    const [semesters, kelas] = await Promise.all([
+    const [semestersRes, kelasRes] = await Promise.all([
       getAllSemesters(),
       getAllKelas()
     ])
 
-    console.log('[KELAS] Semesters:', semesters)
-    console.log('[KELAS] Kelas:', kelas)
+    console.log('[KELAS] Semesters:', semestersRes)
+    console.log('[KELAS] Kelas:', kelasRes)
+
+    const semesters = semestersRes.status === 200 ? semestersRes.data : []
+    const kelas = kelasRes.status === 200 ? kelasRes.data : []
 
     // Find active semester
     const activeSemesterData = Array.isArray(semesters)
-      ? semesters.find(s => s.status === 'AKTIF')
+      ? semesters.find((s: any) => s.status === 'AKTIF')
       : null
 
     activeSemester.value = activeSemesterData?.nama || 'Tidak ada semester aktif'
