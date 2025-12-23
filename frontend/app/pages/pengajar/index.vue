@@ -31,12 +31,12 @@ const menuItems: MenuItem[] = [
     icon: 'i-lucide-book',
     to: '/pengajar/kelas'
   },
-  {
-    label: 'Presensi',
-    description: 'Kelola presensi siswa',
-    icon: 'i-lucide-qr-code',
-    to: '/pengajar/presensi'
-  },
+  // {
+  //   label: 'Presensi',
+  //   description: 'Kelola presensi siswa',
+  //   icon: 'i-lucide-qr-code',
+  //   to: '/pengajar/presensi'
+  // },
   {
     label: 'Nilai',
     description: 'Input dan kelola nilai siswa',

@@ -2,13 +2,13 @@
   <div class="space-y-6">
     <!-- Header -->
     <div>
-      <p class="text-lg font-medium text-[--ui-text-muted]">Manajemen</p>
-      <h1 class="text-3xl font-bold">Lihat Kelas Ajar</h1>
+      <p class="text-lg font-medium text-[--ui-text-muted]">Input Nilai</p>
+      <h1 class="text-3xl font-bold">Pilih Kelas Ajar</h1>
       <p class="text-lg font-medium text-[--ui-text-muted]">{{ activeSemester }}</p>
     </div>
 
     <!-- Daftar Kelas Component -->
-    <PengajarDaftarKelasList ref="kelasListComponent" title="Daftar Kelas" />
+    <PengajarDaftarKelasList base-path="/pengajar/nilai" ref="kelasListComponent" title="Daftar Kelas" />
   </div>
 </template>
 
