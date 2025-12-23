@@ -11,7 +11,7 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Set global prefix
-  app.setGlobalPrefix('api/v1');
+  app.setGlobalPrefix('v1');
 
   // Serve static files for rapor PDFs
   // PDFs are stored in backend/rapor folder
