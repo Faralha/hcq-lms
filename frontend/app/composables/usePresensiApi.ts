@@ -29,8 +29,16 @@ export interface ManualPresensiRequest {
 }
 
 export interface PresensiSessionDetail {
-  session: PresensiSession;
-  records: PresensiRecord[];
+  id: string;
+  kelasId: string;
+  kode: string;
+  createdAt: string;
+  expiresAt: string;
+  kelas: any;
+  presensiRecords: PresensiRecord[];
+  // Legacy support
+  session?: PresensiSession;
+  records?: PresensiRecord[];
 }
 
 export interface PresensiKelasResponse {

@@ -66,6 +66,7 @@ export interface PresensiRecord {
   userId: string;
   status: PresensiStatus;
   timestamp: string;
+  isManual: boolean;
   user: User;
   createdAt: string;
   updatedAt: string;
