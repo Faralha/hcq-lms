@@ -3,6 +3,7 @@ import {
   NestInterceptor,
   ExecutionContext,
   CallHandler,
+  StreamableFile,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -17,14 +18,19 @@ export interface Response<T> {
 
 @Injectable()
 export class TransformInterceptor<T>
-  implements NestInterceptor<T, Response<T>>
+  implements NestInterceptor<T, Response<T> | StreamableFile>
 {
   intercept(
     context: ExecutionContext,
     next: CallHandler,
-  ): Observable<Response<T>> {
+  ): Observable<Response<T> | StreamableFile> {
     return next.handle().pipe(
-      map((data: unknown) => {
+      map((data: unknown): Response<T> | StreamableFile => {
+        // Skip transformation for StreamableFile responses (file downloads)
+        if (data instanceof StreamableFile) {
+          return data;
+        }
+
         const response = context.switchToHttp().getResponse<ExpressResponse>();
 
         // Check if data has meta property (e.g. from pagination)

@@ -10,18 +10,21 @@ import {
   NotFoundException,
   ForbiddenException,
   StreamableFile,
+  Logger,
 } from '@nestjs/common';
 import { RaporService } from './rapor.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards';
 import { Roles } from '../auth/decorators';
 import type { Response } from 'express';
-import { createReadStream, existsSync } from 'fs';
+import { createReadStream, existsSync, statSync } from 'fs';
 import { join } from 'path';
 
 @Controller('rapor')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class RaporController {
+  private readonly logger = new Logger(RaporController.name);
+
   constructor(private readonly raporService: RaporService) {}
 
   /**
@@ -63,11 +66,18 @@ export class RaporController {
     // Get rapor file info
     const raporFile = await this.raporService.getRaporFileStatus(raporFileId);
 
+    this.logger.log(
+      `Download attempt - User ID: ${req.user.userId}, Role: ${req.user.role}, Rapor Student ID: ${raporFile.studentId}`,
+    );
+
     // Check authorization: student can only download their own rapor
     if (
       req.user.role === 'PELAJAR' &&
       raporFile.studentId !== req.user.userId
     ) {
+      this.logger.warn(
+        `Forbidden: User ${req.user.userId} tried to download rapor for student ${raporFile.studentId}`,
+      );
       throw new ForbiddenException(
         'You can only download your own rapor files',
       );
@@ -78,23 +88,28 @@ export class RaporController {
       throw new NotFoundException('Rapor file not ready or does not exist');
     }
 
-    // Construct file path
-    const filePath = join(process.cwd(), raporFile.fileUrl);
+    // Construct file path - remove leading slash if exists
+    const relativePath = raporFile.fileUrl.startsWith('/')
+      ? raporFile.fileUrl.substring(1)
+      : raporFile.fileUrl;
+    const filePath = join(process.cwd(), relativePath);
 
     if (!existsSync(filePath)) {
       throw new NotFoundException('Rapor file not found on server');
     }
 
-    // Create readable stream
-    const file = createReadStream(filePath);
+    // Get file stats
+    const fileStats = statSync(filePath);
 
     // Set response headers
     res.set({
       'Content-Type': 'application/pdf',
       'Content-Disposition': `attachment; filename="rapor_${raporFile.id}.pdf"`,
+      'Content-Length': fileStats.size,
     });
 
-    return new StreamableFile(file);
+    // Return StreamableFile
+    return new StreamableFile(createReadStream(filePath));
   }
 
   /**

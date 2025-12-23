@@ -337,7 +337,7 @@ export class RaporQueueService implements OnModuleInit {
         gradeClass,
         grades: kelas.grades.map((g) => ({
           ...g,
-          bobotPercent: (g.bobot * 100).toFixed(0),
+          bobotPercent: g.bobot.toFixed(0),
           nilaiFormatted: g.nilai.toFixed(2),
         })),
       };

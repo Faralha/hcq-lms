@@ -23,6 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     // JWT validation is already done by passport
     // Just return the payload as user object
     return {
+      userId: payload.sub, // Map 'sub' to 'userId' for consistency
       sub: payload.sub,
       email: payload.email,
       role: payload.role,
