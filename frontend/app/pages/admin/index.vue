@@ -178,7 +178,13 @@ const menuItems: MenuItem[] = [
     description: 'Manage Announcements',
     icon: 'i-lucide-megaphone',
     to: '/admin/announcements'
-  }
+  },
+  {
+    label: 'Rapor',
+    description: 'Manage Rapor',
+    icon: 'i-lucide-file-text',
+    to: '/admin/rapor'
+  },
 ]
 
 // Reactive clock

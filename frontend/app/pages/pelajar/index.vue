@@ -45,6 +45,12 @@ const menuItems: MenuItem[] = [
     description: 'Lihat dan bayar tagihan SPP',
     icon: 'i-lucide-banknote',
     to: '/pelajar/spp'
+  },
+  {
+    label: 'Rapor',
+    description: 'Lihat dan unduh rapor semester',
+    icon: 'i-lucide-file-text',
+    to: '/pelajar/rapor'
   }
 ]
 
