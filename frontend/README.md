@@ -1,4 +1,3 @@
-````mdc
 # HCQ LMS - Frontend
 
 Learning Management System untuk Halaqoh Cinta Qur'an
@@ -253,4 +252,3 @@ Ensure backend `/auth/me` endpoint returns user data with role.
 **Dev Server:** http://localhost:3001/
 **Backend API:** http://localhost:4000/api/v1
 **Documentation:** See markdown files in root directory
-````
