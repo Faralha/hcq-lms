@@ -35,7 +35,14 @@ describe('Auth Module (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    // Close Prisma connections
+    if (prisma) {
+      await prisma.$disconnect();
+    }
+    // Close the app and all its connections
+    if (app) {
+      await app.close();
+    }
   });
 
   describe('/auth/register (POST)', () => {
