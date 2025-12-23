@@ -23,13 +23,18 @@ async function bootstrap() {
   // Use cookie parser
   app.use(cookieParser());
 
+  // Dynamic CORS configuration from environment variable
+  const corsOrigins = process.env.FRONTEND_URL
+    ? [process.env.FRONTEND_URL]
+    : [
+        'http://localhost:3000',
+        'http://localhost:4000',
+        'http://localhost:5173', // Vite default
+      ];
+
   // Enable CORS
   app.enableCors({
-    origin: [
-      'http://localhost:3000',
-      'http://localhost:4000',
-      'http://localhost:5173', // Vite default
-    ],
+    origin: corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
