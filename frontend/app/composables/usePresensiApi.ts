@@ -61,7 +61,7 @@ export const usePresensiApi = () => {
   const startKelas = async (
     kelasId: string
   ): Promise<ApiResponse<StartKelasResponse>> => {
-    return api.post<StartKelasResponse>(`presensi/kelas/${kelasId}/mulai`);
+    return api.post(`presensi/kelas/${kelasId}/mulai`);
   };
 
   /**
@@ -71,9 +71,7 @@ export const usePresensiApi = () => {
   const stopSession = async (
     sessionId: string
   ): Promise<ApiResponse<PresensiSessionDetail>> => {
-    return api.post<PresensiSessionDetail>(
-      `presensi/session/${sessionId}/stop`
-    );
+    return api.post(`presensi/session/${sessionId}/stop`);
   };
 
   /**
@@ -94,7 +92,7 @@ export const usePresensiApi = () => {
     sessionId: string,
     data: ManualPresensiRequest
   ): Promise<ApiResponse<PresensiRecord>> => {
-    return api.post<PresensiRecord>(
+    return api.post(
       `presensi/session/${sessionId}/manual`,
       data
     );
@@ -107,7 +105,7 @@ export const usePresensiApi = () => {
   const getPresensiBySession = async (
     sessionId: string
   ): Promise<ApiResponse<PresensiSessionDetail>> => {
-    return api.get<PresensiSessionDetail>(`presensi/session/${sessionId}`);
+    return api.get(`presensi/session/${sessionId}`);
   };
 
   /**
@@ -117,7 +115,7 @@ export const usePresensiApi = () => {
   const getRiwayatPresensi = async (): Promise<
     ApiResponse<PresensiRecord[]>
   > => {
-    return api.get<PresensiRecord[]>("presensi/riwayat");
+    return api.get("presensi/riwayat");
   };
 
   /**
@@ -128,7 +126,7 @@ export const usePresensiApi = () => {
   const getPresensiByKelas = async (
     kelasId: string
   ): Promise<ApiResponse<PresensiKelasResponse>> => {
-    return api.get<PresensiKelasResponse>(`presensi/kelas/${kelasId}`);
+    return api.get(`presensi/kelas/${kelasId}`);
   };
 
   return {

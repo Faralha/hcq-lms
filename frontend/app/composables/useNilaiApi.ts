@@ -53,7 +53,7 @@ export const useNilaiApi = () => {
   const createKomponen = async (
     data: CreateKomponenRequest
   ): Promise<ApiResponse<KomponenNilai>> => {
-    return api.post<KomponenNilai>("nilai/komponen", data);
+    return api.post("nilai/komponen", data);
   };
 
   /**
@@ -63,7 +63,7 @@ export const useNilaiApi = () => {
   const getKomponenByKelas = async (
     kelasId: string
   ): Promise<ApiResponse<KomponenNilai[]>> => {
-    return api.get<KomponenNilai[]>(`nilai/komponen/kelas/${kelasId}`);
+    return api.get(`nilai/komponen/kelas/${kelasId}`);
   };
 
   /**
@@ -84,7 +84,7 @@ export const useNilaiApi = () => {
     id: string,
     data: UpdateNilaiRequest
   ): Promise<ApiResponse<Nilai>> => {
-    return api.patch<Nilai>(`nilai/${id}`, data);
+    return api.patch(`nilai/${id}`, data);
   };
 
   /**
@@ -94,7 +94,7 @@ export const useNilaiApi = () => {
   const getNilaiByKelas = async (
     kelasId: string
   ): Promise<ApiResponse<NilaiByKelas>> => {
-    return api.get<NilaiByKelas>(`nilai/kelas/${kelasId}`);
+    return api.get(`nilai/kelas/${kelasId}`);
   };
 
   /**
@@ -102,7 +102,7 @@ export const useNilaiApi = () => {
    * GET /nilai/saya
    */
   const getMyNilai = async (): Promise<ApiResponse<MyNilai[]>> => {
-    return api.get<MyNilai[]>("nilai/saya");
+    return api.get("nilai/saya");
   };
 
   return {
