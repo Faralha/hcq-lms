@@ -44,7 +44,7 @@ const menuItems: MenuItem[] = [
     label: 'Tagihan SPP',
     description: 'Lihat dan bayar tagihan SPP',
     icon: 'i-lucide-banknote',
-    to: '/pelajar/tagihan-spp'
+    to: '/pelajar/spp'
   }
 ]
 
