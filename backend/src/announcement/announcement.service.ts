@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Role, AnnouncementScope } from '@prisma/client';
+import { Role, AnnouncementScope, Prisma } from '@prisma/client';
 import { CreateAnnouncementDto, UpdateAnnouncementDto } from './dto';
 
 @Injectable()
@@ -43,7 +43,11 @@ export class AnnouncementService {
     }
 
     // If KELAS scope, validate user is assigned as PENGAJAR to that kelas
-    if (createAnnouncementDto.scope === AnnouncementScope.KELAS) {
+    // ADMIN can create announcements for any kelas without enrollment
+    if (
+      createAnnouncementDto.scope === AnnouncementScope.KELAS &&
+      user.role !== Role.ADMIN
+    ) {
       const enrollment = await this.prisma.enrollment.findUnique({
         where: {
           userId_kelasId: {
@@ -113,27 +117,34 @@ export class AnnouncementService {
       throw new NotFoundException(`User with ID ${userId} not found`);
     }
 
-    // Get kelas IDs where user is enrolled
-    const kelasIds = user.enrollments.map((e) => e.kelasId);
+    // Build where condition based on user role
+    let whereCondition: Prisma.AnnouncementWhereInput;
 
-    // Build where condition based on user role and enrollments
-    const whereCondition =
-      kelasIds.length > 0
-        ? {
-            OR: [
-              { scope: AnnouncementScope.GLOBAL },
-              {
-                scope: AnnouncementScope.KELAS,
-                kelasId: { in: kelasIds },
-              },
-            ],
-          }
-        : {
-            scope: AnnouncementScope.GLOBAL,
-          };
+    if (user.role === Role.ADMIN) {
+      // ADMIN can see all announcements (GLOBAL and KELAS)
+      whereCondition = {};
+    } else {
+      // PELAJAR and PENGAJAR can only see GLOBAL and their enrolled KELAS announcements
+      const kelasIds = user.enrollments.map((e) => e.kelasId);
+
+      whereCondition =
+        kelasIds.length > 0
+          ? {
+              OR: [
+                { scope: AnnouncementScope.GLOBAL },
+                {
+                  scope: AnnouncementScope.KELAS,
+                  kelasId: { in: kelasIds },
+                },
+              ],
+            }
+          : {
+              scope: AnnouncementScope.GLOBAL,
+            };
+    }
 
     // Add search condition if provided
-    const finalWhereCondition = search
+    const finalWhereCondition: Prisma.AnnouncementWhereInput = search
       ? {
           AND: [
             whereCondition,

@@ -11,7 +11,11 @@ import {
   Query,
 } from '@nestjs/common';
 import { AnnouncementService } from './announcement.service';
-import { CreateAnnouncementDto, UpdateAnnouncementDto } from './dto';
+import {
+  CreateAnnouncementDto,
+  UpdateAnnouncementDto,
+  AnnouncementPaginatedResponse,
+} from './dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -41,7 +45,7 @@ export class AnnouncementController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
-  ) {
+  ): Promise<AnnouncementPaginatedResponse> {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 10;
     return this.announcementService.findAll(
