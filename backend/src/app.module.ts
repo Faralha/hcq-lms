@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { BullModule } from '@nestjs/bull';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
@@ -14,12 +15,20 @@ import { AnnouncementModule } from './announcement/announcement.module';
 import { SppModule } from './spp/spp.module';
 import { GajiModule } from './gaji/gaji.module';
 import { MateriModule } from './materi/materi.module';
+import { RaporModule } from './rapor/rapor.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+    }),
+    BullModule.forRoot({
+      redis: {
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD,
+      },
     }),
     PrismaModule,
     AuthModule,
@@ -33,6 +42,7 @@ import { MateriModule } from './materi/materi.module';
     SppModule,
     GajiModule,
     MateriModule,
+    RaporModule,
   ],
   controllers: [AppController],
   providers: [AppService],

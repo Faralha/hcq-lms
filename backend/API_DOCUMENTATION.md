@@ -1,7 +1,7 @@
 # HCQ LMS - Complete API Documentation
 
 > Learning Management System untuk Halaqoh Cinta Qur'an  
-> **Version:** 1.0.0 | **Updated:** November 6, 2025 | **Status:** ✅ Production Ready
+> **Version:** 1.1.0 | **Updated:** December 23, 2025 | **Status:** ✅ Production Ready
 
 ---
 
@@ -20,6 +20,7 @@
    - [Announcement](#announcement)
    - [SPP](#spp)
    - [Gaji](#gaji)
+   - [Rapor](#rapor)
 4. [Authorization Matrix](#-authorization-matrix)
 5. [Error Handling](#-error-handling)
 
@@ -1789,6 +1790,340 @@ Authorization: Bearer <admin-token>
 
 ---
 
+### Rapor
+
+#### Generate Rapor PDF (Admin Only)
+
+Generate rapor PDF for a student in a specific semester. Uses background queue processing with **Bull + Redis**.
+
+```http
+POST /rapor/generate/:studentId?semesterId=<semester-uuid>
+Authorization: Bearer <admin-token>
+```
+
+**URL Parameters:**
+
+- `studentId` (string, required): UUID of the student
+
+**Query Parameters:**
+
+- `semesterId` (string, required): UUID of the semester
+
+**Response (200 OK):**
+
+```json
+{
+  "raporFileId": "uuid",
+  "status": "PENDING",
+  "message": "PDF generation queued successfully"
+}
+```
+
+**Response (200 OK - Already Exists):**
+
+```json
+{
+  "raporFileId": "uuid",
+  "status": "COMPLETED",
+  "fileUrl": "/rapor/Semester_Ganjil_2024/rapor_student-id_1703352000000.pdf",
+  "message": "Rapor already exists"
+}
+```
+
+**Notes:**
+
+- **Queue System**: Bull (Redis-based job queue) - See [REDIS_QUEUE_SETUP.md](REDIS_QUEUE_SETUP.md)
+- **Redis Version**: Redis 8.x recommended
+- Rapor files stored at: `backend/rapor/{sanitized_semester_name}/`
+- Semester names sanitized: spaces, slashes, special chars → underscores
+- Each student can only have ONE rapor per semester (unique constraint)
+- If rapor already exists with COMPLETED status, returns existing data
+- If PENDING/PROCESSING, returns current status
+- If FAILED, will recreate
+- PDF generation runs in background (check status via `/rapor/status/:raporFileId`)
+- **Retry Policy**: 3 attempts with exponential backoff (60s base delay)
+- **File Validation**: System verifies file exists and size > 0 before marking COMPLETED
+
+---
+
+#### Get Rapor Status
+
+Check the generation status of a rapor file.
+
+```http
+GET /rapor/status/:raporFileId
+Authorization: Bearer <token>
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "id": "uuid",
+  "studentId": "student-uuid",
+  "semesterId": "semester-uuid",
+  "status": "COMPLETED",
+  "fileUrl": "/rapor/Semester_Ganjil_2024/rapor_student-id_1703352000000.pdf",
+  "createdAt": "2025-12-23T10:00:00.000Z",
+  "updatedAt": "2025-12-23T10:05:00.000Z"
+}
+```
+
+**Status Values:**
+
+- `PENDING`: Queued in Redis, waiting to be processed
+- `PROCESSING`: Currently generating PDF
+- `COMPLETED`: PDF ready for download
+- `FAILED`: Generation failed (can retry)
+
+---
+
+#### Download Rapor PDF
+
+Download the generated rapor PDF file. Students can only download their own rapor, Admin can download any.
+
+```http
+GET /rapor/download/:raporFileId
+Authorization: Bearer <token>
+```
+
+**Authorization:**
+
+- **ADMIN**: Can download any rapor
+- **PELAJAR**: Can only download their own rapor
+- **PENGAJAR**: Can download any rapor
+
+**Response (200 OK):**
+
+Streams the PDF file with headers:
+
+```
+Content-Type: application/pdf
+Content-Disposition: attachment; filename="rapor_<id>.pdf"
+```
+
+**Error Responses:**
+
+```json
+// 403 - Student trying to download another student's rapor
+{
+  "statusCode": 403,
+  "message": "You can only download your own rapor files",
+  "error": "Forbidden"
+}
+
+// 404 - Rapor not ready
+{
+  "statusCode": 404,
+  "message": "Rapor file not ready or does not exist",
+  "error": "Not Found"
+}
+```
+
+---
+
+#### Get My Rapor Files (Students)
+
+Get all rapor files for the authenticated user.
+
+```http
+GET /rapor/my-files
+Authorization: Bearer <student-token>
+```
+
+**Response (200 OK):**
+
+```json
+[
+  {
+    "id": "uuid",
+    "studentId": "student-uuid",
+    "semesterId": "semester-uuid",
+    "status": "COMPLETED",
+    "fileUrl": "/rapor/Semester_Ganjil_2024/rapor_student-id_1703352000000.pdf",
+    "createdAt": "2025-12-23T10:00:00.000Z",
+    "updatedAt": "2025-12-23T10:05:00.000Z"
+  },
+  {
+    "id": "uuid-2",
+    "studentId": "student-uuid",
+    "semesterId": "semester-uuid-2",
+    "status": "PENDING",
+    "fileUrl": null,
+    "createdAt": "2025-12-23T11:00:00.000Z",
+    "updatedAt": "2025-12-23T11:00:00.000Z"
+  }
+]
+```
+
+---
+
+#### Get Rapor Files by Student (Admin/Pengajar)
+
+Get all rapor files for a specific student.
+
+```http
+GET /rapor/student/:studentId
+Authorization: Bearer <admin-or-pengajar-token>
+```
+
+**Response:** Same as "Get My Rapor Files" above
+
+---
+
+#### Get All Rapor Files (Admin Only)
+
+Get all rapor files in the system.
+
+```http
+GET /rapor/all
+Authorization: Bearer <admin-token>
+```
+
+**Response (200 OK):**
+
+```json
+[
+  {
+    "id": "uuid",
+    "studentId": "student-uuid-1",
+    "semesterId": "semester-uuid-1",
+    "status": "COMPLETED",
+    "fileUrl": "/rapor/Semester_Ganjil_2024/rapor_student-uuid-1_1703352000000.pdf",
+    "createdAt": "2025-12-23T10:00:00.000Z",
+    "updatedAt": "2025-12-23T10:05:00.000Z"
+  },
+  {
+    "id": "uuid-2",
+    "studentId": "student-uuid-2",
+    "semesterId": "semester-uuid-1",
+    "status": "PROCESSING",
+    "fileUrl": null,
+    "createdAt": "2025-12-23T11:00:00.000Z",
+    "updatedAt": "2025-12-23T11:01:00.000Z"
+  }
+]
+```
+
+---
+
+#### Rapor PDF Content
+
+The generated rapor includes:
+
+1. **Student Information**
+   - Name, Email, Print Date
+
+2. **Grades Summary Table**
+   - Mata Pelajaran, Kelas
+   - Nilai Akhir (weighted average)
+   - Predikat (A/B/C/D/E)
+
+3. **Detailed Component Scores**
+   - Per mata pelajaran breakdown
+   - Component name, weight (%), score
+
+4. **Attendance Summary**
+   - Per mata pelajaran statistics
+   - Hadir, Izin, Sakit, Alpha counts
+   - Total pertemuan
+
+5. **Grade Scale**
+   - A: ≥ 85 (Green)
+   - B: ≥ 70 (Yellow)
+   - C: ≥ 60 (Yellow)
+   - D: ≥ 50 (Red)
+   - E: < 50 (Red)
+
+---
+
+#### Rapor File Structure
+
+PDF files are saved in `backend/rapor/` directory, organized by semester:
+
+```
+backend/
+├── rapor/
+│   ├── Genap_2025_2026/          # Sanitized semester name
+│   │   ├── rapor_student-uuid-1_1703352000000.pdf
+│   │   ├── rapor_student-uuid-2_1703352010000.pdf
+│   │   └── ...
+│   ├── Ganjil_2025_2026/
+│   │   ├── rapor_student-uuid-1_1703352050000.pdf
+│   │   └── ...
+```
+
+**Filename Sanitization:**
+- Semester name: "Genap 2025/2026" → "Genap_2025_2026"
+- Regex: `/[^a-zA-Z0-9-_]/g` replaced with `_`
+- Prevents nested directories from slashes
+
+**Static File Access:**
+
+- Files are served at: `GET /rapor/{sanitized_semester_name}/{filename}.pdf`
+- Direct access requires authentication via download endpoint
+- Absolute path: `process.cwd() + '/rapor/' + sanitizedSemesterName`
+
+---
+
+#### Background Processing
+
+**Queue System:** Bull (Redis-based job queue)
+
+**Queue Configuration:**
+
+- Queue Name: `rapor-pdf`
+- Redis Host: `localhost:6379` (configurable via env)
+- Redis Version: 8.x
+- Retry Limit: 3 attempts
+- Retry Delay: 60 seconds (exponential backoff)
+- Job TTL: 24 hours
+
+**Processing Flow:**
+
+1. Admin creates generation request → `POST /rapor/generate/:studentId?semesterId=xxx`
+2. System creates RaporFile record (status: PENDING)
+3. Job added to Bull queue in Redis
+4. Background worker picks up job (`@Processor('rapor-pdf')`)
+5. Status updated to PROCESSING
+6. Fetch student data (nilai, presensi) from PostgreSQL
+7. Generate PDF using Puppeteer + Handlebars template
+8. Save to `backend/rapor/{sanitized_semester}/rapor_<studentId>_<timestamp>.pdf`
+9. Validate file exists and size > 0
+10. Update status to COMPLETED with fileUrl
+11. Student can download via `GET /rapor/download/:raporFileId`
+
+**Technical Details:**
+
+- **PDF Engine**: Puppeteer v24.34.0 with Chrome 143
+- **Template Engine**: Handlebars v4.7.8
+- **Template Path**: `src/rapor/templates/rapor.hbs`
+- **Worker Class**: `RaporQueueService` with `@Processor` decorator
+- **Job Data**: `{ raporFileId: string }`
+
+**Error Handling:**
+
+- Failed jobs marked as FAILED status in database
+- Automatic retry (3x) with exponential backoff via Bull
+- Admin can re-trigger generation for failed rapors (creates new job)
+- File validation prevents false COMPLETED status
+
+**Monitoring:**
+
+- Check queue status: Redis CLI or Bull Board (if installed)
+- Worker logs: `[RaporQueueService]` prefix in console
+- Database status: Query `RaporFile` table for PENDING/PROCESSING jobs
+
+**Setup Guide:**
+
+See [REDIS_QUEUE_SETUP.md](REDIS_QUEUE_SETUP.md) for:
+- Redis installation
+- Docker deployment with Chrome
+- Queue monitoring
+- Troubleshooting stuck jobs
+
+---
+
 ## Authorization Matrix
 
 | Module                  | Create           | Read             | Update           | Delete        |
@@ -1810,6 +2145,11 @@ Authorization: Bearer <admin-token>
 | **Announcement**        | ADMIN/PENGAJAR   | ALL              | Creator/ADMIN    | Creator/ADMIN |
 | **SPP**                 | ADMIN            | ADMIN/PELAJAR    | ADMIN            | ADMIN         |
 | **Gaji**                | ADMIN            | ADMIN/PENGAJAR   | ADMIN            | ADMIN         |
+| **Rapor Generation**    | ADMIN            | -                | -                | -             |
+| **Rapor Download**      | -                | ADMIN/PELAJAR\*  | -                | -             |
+| **Rapor List**          | -                | ADMIN/PELAJAR    | -                | -             |
+
+\*PELAJAR can only download their own rapor
 
 ---
 

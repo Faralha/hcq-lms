@@ -4,12 +4,21 @@ import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   // Set global prefix
   app.setGlobalPrefix('api/v1');
+
+  // Serve static files for rapor PDFs
+  // PDFs are stored in backend/rapor folder
+  const raporPath = join(__dirname, '..', '..', 'rapor');
+  app.useStaticAssets(raporPath, {
+    prefix: '/rapor',
+  });
 
   // Use cookie parser
   app.use(cookieParser());

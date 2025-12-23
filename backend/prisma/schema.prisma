@@ -39,6 +39,13 @@ enum AnnouncementScope {
   KELAS
 }
 
+enum RaporStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
 model User {
   id          String   @id @default(uuid())
   email       String   @unique
@@ -62,6 +69,7 @@ model User {
   materiSections   MateriSection[]
   komponenNilai    KomponenNilai[]
   refreshTokens    RefreshToken[]
+  raporFiles       RaporFile[]
 
   @@map("users")
 }
@@ -104,7 +112,8 @@ model Semester {
   updatedAt     DateTime       @updatedAt
 
   // Relations
-  kelas Kelas[]
+  kelas      Kelas[]
+  raporFiles RaporFile[]
 
   @@map("semesters")
 }
@@ -309,4 +318,21 @@ model Announcement {
   creator User   @relation(fields: [createdBy], references: [id])
 
   @@map("announcements")
+}
+
+model RaporFile {
+  id         String       @id @default(uuid())
+  studentId  String
+  semesterId String
+  status     RaporStatus  @default(PENDING)
+  fileUrl    String?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  // Relations
+  student  User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  semester Semester @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, semesterId])
+  @@map("rapor_files")
 }
