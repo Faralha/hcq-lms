@@ -8,7 +8,7 @@
     </div>
 
     <!-- Daftar Kelas Component -->
-    <PengajarDaftarKelasList ref="kelasListComponent" title="Daftar Kelas" />
+    <PengajarDaftarKelasList base-path="/pengajar/kelas" ref="kelasListComponent" title="Daftar Kelas" />
   </div>
 </template>
 
