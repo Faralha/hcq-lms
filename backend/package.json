@@ -24,7 +24,8 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
     "puppeteer:install": "puppeteer browsers install chrome",
-    "prepare": "husky"
+    "prepare": "husky",
+    "seed:prod": "ts-node prisma/seed-prod.ts"
   },
   "dependencies": {
     "@nestjs/bull": "^11.0.4",
