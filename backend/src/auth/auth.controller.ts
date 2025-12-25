@@ -10,6 +10,7 @@ import {
   Query,
   Res,
   Req,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterPelajarDto, ChangePasswordDto } from './dto';
@@ -39,6 +40,15 @@ export class AuthController {
   @Roles('ADMIN')
   async invitePengajar(@Body('email') email: string) {
     return this.authService.createPengajarInvitation(email);
+  }
+
+  @Get('validate-invitation')
+  @HttpCode(HttpStatus.OK)
+  async validateInvitation(@Query('token') token: string) {
+    if (!token) {
+      throw new BadRequestException('Token is required');
+    }
+    return this.authService.validatePengajarInvitationToken(token);
   }
 
   @Post('login')

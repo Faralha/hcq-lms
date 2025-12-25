@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
+import { EmailService } from '../email/email.service';
 import {
   ConflictException,
   UnauthorizedException,
@@ -38,6 +40,22 @@ describe('AuthService', () => {
     signAsync: jest.fn(),
   };
 
+  const mockConfigService = {
+    get: jest.fn((key: string) => {
+      const config: Record<string, string> = {
+        JWT_SECRET: 'test-secret',
+        JWT_EXPIRATION: '7d',
+        FRONTEND_URL: 'http://localhost:3000',
+      };
+      return config[key];
+    }),
+  };
+
+  const mockEmailService = {
+    sendMagicLinkEmail: jest.fn().mockResolvedValue(true),
+    sendWelcomeEmail: jest.fn().mockResolvedValue(true),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -49,6 +67,14 @@ describe('AuthService', () => {
         {
           provide: JwtService,
           useValue: mockJwtService,
+        },
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
+        },
+        {
+          provide: EmailService,
+          useValue: mockEmailService,
         },
       ],
     }).compile();

@@ -4,6 +4,9 @@ import request from 'supertest';
 import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 
+// Set timeout untuk test
+jest.setTimeout(30000);
+
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
 
@@ -20,6 +23,8 @@ describe('AppController (e2e)', () => {
     if (app) {
       await app.close();
     }
+    // Give time for all handles to close
+    await new Promise((resolve) => setTimeout(resolve, 500));
   });
 
   it('/ (GET)', () => {

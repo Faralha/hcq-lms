@@ -5,7 +5,9 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { EmailService } from '../email/email.service';
 import * as argon2 from 'argon2';
 import * as crypto from 'crypto';
 import {
@@ -21,6 +23,8 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+    private readonly emailService: EmailService,
   ) {}
 
   async registerPelajar(registerDto: RegisterPelajarDto) {
@@ -299,14 +303,44 @@ export class AuthService {
       },
     });
 
-    // TODO: Send email with magic link
-    // For now, return the token directly
-    const magicLink = `${process.env.FRONTEND_URL || 'http://localhost:3000'}/register?token=${token}`;
+    // Generate magic link
+    const magicLink = `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000'}/auth/validate-pengajar?token=${token}`;
+
+    // Send email with magic link
+    await this.emailService.sendMagicLinkEmail(
+      email,
+      email.split('@')[0], // Use email prefix as name if not available
+      magicLink,
+    );
 
     return {
-      message: 'Invitation created successfully',
+      message: 'Invitation created and sent successfully',
       email: invitation.email,
-      magicLink, // In production, this should be sent via email
+      expiresAt: invitation.expiresAt,
+    };
+  }
+
+  async validatePengajarInvitationToken(token: string) {
+    // Find and validate invitation
+    const invitation = await this.prisma.pengajarInvitation.findUnique({
+      where: { token },
+    });
+
+    if (!invitation) {
+      throw new BadRequestException('Invalid invitation token');
+    }
+
+    if (invitation.used) {
+      throw new BadRequestException('Invitation token already used');
+    }
+
+    if (new Date() > invitation.expiresAt) {
+      throw new BadRequestException('Invitation token expired');
+    }
+
+    return {
+      valid: true,
+      email: invitation.email,
       expiresAt: invitation.expiresAt,
     };
   }
@@ -382,6 +416,12 @@ export class AuthService {
       where: { token },
       data: { used: true },
     });
+
+    // Send welcome email
+    await this.emailService.sendWelcomeEmail(
+      user.email,
+      user.fullName || user.nama || user.email.split('@')[0],
+    );
 
     return {
       message: 'Teacher registered successfully',

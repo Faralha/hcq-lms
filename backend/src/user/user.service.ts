@@ -50,6 +50,8 @@ export class UserService {
         id: true,
         email: true,
         nama: true,
+        cities: true,
+        phoneNumber: true,
         role: true,
         createdAt: true,
         updatedAt: true,

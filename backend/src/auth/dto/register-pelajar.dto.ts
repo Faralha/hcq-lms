@@ -30,6 +30,10 @@ export class RegisterPelajarDto {
 
   @IsString()
   @IsOptional()
+  provinces?: string;
+
+  @IsString()
+  @IsOptional()
   address?: string;
 
   @IsString()

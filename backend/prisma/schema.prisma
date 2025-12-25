@@ -53,6 +53,7 @@ model User {
   nama        String
   fullName    String?
   cities      String?
+  provinces   String?
   address     String?
   phoneNumber String?
   role        Role

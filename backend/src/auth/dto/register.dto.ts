@@ -2,7 +2,6 @@ import {
   IsEmail,
   IsEnum,
   IsNotEmpty,
-  IsOptional,
   IsString,
   MinLength,
 } from 'class-validator';
@@ -23,20 +22,24 @@ export class RegisterDto {
   nama: string;
 
   @IsString()
-  @IsOptional()
-  fullName?: string;
+  @IsNotEmpty()
+  fullName: string;
 
   @IsString()
-  @IsOptional()
-  cities?: string;
+  @IsNotEmpty()
+  cities: string;
 
   @IsString()
-  @IsOptional()
-  address?: string;
+  @IsNotEmpty()
+  provinces: string;
 
   @IsString()
-  @IsOptional()
-  phoneNumber?: string;
+  @IsNotEmpty()
+  address: string;
+
+  @IsString()
+  @IsNotEmpty()
+  phoneNumber: string;
 
   @IsEnum(Role)
   @IsNotEmpty()

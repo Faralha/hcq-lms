@@ -8,6 +8,9 @@ import request from 'supertest';
 import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 
+// Set timeout untuk test
+jest.setTimeout(30000);
+
 describe('Auth Module (e2e)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
@@ -35,14 +38,17 @@ describe('Auth Module (e2e)', () => {
   });
 
   afterAll(async () => {
-    // Close Prisma connections
+    // Clean database after tests
     if (prisma) {
+      await prisma.cleanDatabase();
       await prisma.$disconnect();
     }
     // Close the app and all its connections
     if (app) {
       await app.close();
     }
+    // Give time for all handles to close
+    await new Promise((resolve) => setTimeout(resolve, 500));
   });
 
   describe('/auth/register (POST)', () => {
