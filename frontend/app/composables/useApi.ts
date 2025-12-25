@@ -31,7 +31,8 @@ export const useApi = () => {
     const cleanEndpoint = endpoint.replace(/^\//, "");
 
     // Build full URL
-    // Expected: http://localhost:4000/api/v1/login
+    // apiBase dari .env: http://localhost:4000
+    // Result: http://localhost:4000/v1/login
     const url = `${apiBase}/${version}/${cleanEndpoint}`;
 
     // Prepare headers

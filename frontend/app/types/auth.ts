@@ -9,22 +9,23 @@ export interface LoginRequest {
 }
 
 export interface RegisterRequest {
+  nama: string
   fullName: string
   email: string
   password: string
-  confirmPassword: string
   phoneNumber: string
-  city: string
+  provinces: string
+  cities: string
   address: string
 }
 
 export interface AuthUser {
   id: string
   fullName: string
-  nama?: string // Backend might use 'nama' instead of 'fullName'
+  nama?: string
   email: string
   phoneNumber: string
-  city: string
+  cities: string
   address: string
   role?: UserRole
   createdAt?: string
@@ -65,4 +66,10 @@ export interface InvitePengajarResponse {
   email: string
   magicLink: string
   expiresAt: string
+}
+
+export interface ValidateInvitationResponse {
+  valid: boolean
+  email: string
+  message: string
 }

@@ -359,6 +359,73 @@ Content-Type: application/json
 }
 ```
 
+### Validate Pengajar Invitation
+
+**Endpoint:** `GET /api/v1/auth/validate-invitation`
+
+**Public:** Yes
+
+**Query Parameters:**
+
+- `token` (required): The invitation token from the magic link
+
+**Description:** Validates if a pengajar invitation token is still valid. This endpoint can be used for pre-form validation (fail-fast) before the user fills out the registration form. It checks if the token exists, hasn't been used, and hasn't expired.
+
+**Example Request:**
+
+```bash
+GET /api/v1/auth/validate-invitation?token=abc123def456...
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "status": 200,
+  "message": "Success",
+  "data" : {
+    "valid": true,
+    "email": "newteacher@hcq.com",
+    "expiresAt": "2025-11-13T12:00:00.000Z"
+  }
+}
+```
+
+**Note:** Email is returned for better UX, allowing the frontend to pre-fill the registration form. The token itself serves as the primary security mechanism.
+
+**Error Responses:**
+
+```json
+// Token not provided
+{
+  "status": 400,
+  "message": "Token is required"
+}
+
+// Invalid token
+{
+  "status": 400,
+  "message": "Invalid invitation token"
+}
+
+// Token already used
+{
+  "status": 400,
+  "message": "Invitation token already used"
+}
+
+// Token expired
+{
+  "status": 400,
+  "message": "Invitation token expired"
+}
+```
+
+**Usage Flow:**
+
+1. **Pre-form validation (fail-fast):** Call this endpoint when the user visits the registration page with a token to check if the link is still valid before showing the form.
+2. **Form submission:** The token will be validated again during the actual registration (POST /api/v1/auth/register?token=...) to ensure security.
+
 ### Invite Pengajar (Admin Only)
 
 **Endpoint:** `POST /api/v1/auth/invite-pengajar`
@@ -2054,6 +2121,7 @@ backend/
 ```
 
 **Filename Sanitization:**
+
 - Semester name: "Genap 2025/2026" → "Genap_2025_2026"
 - Regex: `/[^a-zA-Z0-9-_]/g` replaced with `_`
 - Prevents nested directories from slashes
@@ -2117,6 +2185,7 @@ backend/
 **Setup Guide:**
 
 See [REDIS_QUEUE_SETUP.md](REDIS_QUEUE_SETUP.md) for:
+
 - Redis installation
 - Docker deployment with Chrome
 - Queue monitoring
@@ -2131,6 +2200,7 @@ See [REDIS_QUEUE_SETUP.md](REDIS_QUEUE_SETUP.md) for:
 | **User**                | ADMIN            | ADMIN            | ADMIN            | ADMIN         |
 | **Register (Pelajar)**  | PUBLIC           | -                | -                | -             |
 | **Invite Pengajar**     | ADMIN            | -                | -                | -             |
+| **Validate Invitation** | -                | PUBLIC           | -                | -             |
 | **Register (Pengajar)** | PUBLIC (w/token) | -                | -                | -             |
 | **Semester**            | ADMIN            | ALL              | ADMIN            | ADMIN         |
 | **Mata Pelajaran**      | ADMIN            | ALL              | ADMIN            | ADMIN         |

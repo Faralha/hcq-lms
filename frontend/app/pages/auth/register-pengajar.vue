@@ -7,7 +7,7 @@
         <div class="mb-2">
           <UIcon name="i-lucide-user-plus" class="size-8 shrink-0 inline-block" />
         </div>
-        <h1 class="text-xl text-pretty font-semibold text-highlighted">Register</h1>
+        <h1 class="text-xl text-pretty font-semibold text-highlighted">Register Pengajar</h1>
         <p class="mt-1 text-base text-pretty text-muted">Isi form dengan data yang sesuai</p>
       </div>
 
@@ -39,15 +39,15 @@
         </UFormField>
 
         <UFormField label="Provinsi" name="province" required class="w-full">
-          <USelectMenu v-model="state.provinces" :items="provinces" value-key="code" label-key="name"
+          <USelectMenu v-model="state.province" :items="provinces" value-key="code" label-key="name"
             placeholder="Pilih provinsi" searchable searchable-placeholder="Cari provinsi..."
             :loading="isLoadingProvinces" class="w-full" @update:model-value="onProvinceChange" />
         </UFormField>
 
         <UFormField label="Kota/Kabupaten" name="cities" required class="w-full">
           <USelectMenu v-model="state.cities" :items="cities" value-key="code" label-key="name"
-            :placeholder="state.provinces ? 'Pilih kota/kabupaten' : 'Pilih provinsi terlebih dahulu'" searchable
-            searchable-placeholder="Cari kota/kabupaten..." :loading="isLoadingCities" :disabled="!state.provinces"
+            :placeholder="state.province ? 'Pilih kota/kabupaten' : 'Pilih provinsi terlebih dahulu'" searchable
+            searchable-placeholder="Cari kota/kabupaten..." :loading="isLoadingCities" :disabled="!state.province"
             class="w-full" />
         </UFormField>
 
@@ -89,6 +89,7 @@ definePageMeta({
 const toast = useToast()
 const authApi = useAuthApi()
 const router = useRouter()
+const route = useRoute()
 
 // Loading state
 const isSubmitting = ref(false)
@@ -127,21 +128,24 @@ onMounted(async () => {
   }
 })
 
+// Get token from query parameter (required for pengajar registration)
+const invitationToken = route.query.token ? String(route.query.token) : ''
+
 // Storage key for this form
-const STORAGE_KEY = 'register-pelajar-form'
+const STORAGE_KEY = 'register-pengajar-form'
 
 // Load saved form data from localStorage
 const savedData = loadFormFromStorage<any>(STORAGE_KEY)
 
-// Form state with saved data
+// Form state with email from query parameter and saved data
 const state = reactive({
   nama: savedData?.nama || '',
   fullName: savedData?.fullName || '',
-  email: savedData?.email || '',
+  email: route.query.email ? String(route.query.email) : savedData?.email || '',
   password: '', // Never store passwords
   confirmPassword: '', // Never store passwords
   phoneNumber: savedData?.phoneNumber || '',
-  provinces: savedData?.provinces || '',
+  province: savedData?.province || '',
   cities: savedData?.cities || '',
   address: savedData?.address || '',
 })
@@ -158,7 +162,7 @@ watch(
         fullName: newState.fullName,
         email: newState.email,
         phoneNumber: newState.phoneNumber,
-        province: newState.provinces,
+        province: newState.province,
         cities: newState.cities,
         address: newState.address,
       }
@@ -185,11 +189,11 @@ function onProvinceChange(provinceCode: string) {
 const schema = z.object({
   nama: z.string().min(2, 'Nama minimal 2 karakter'),
   fullName: z.string().min(3, 'Nama lengkap minimal 3 karakter'),
-  email: z.string().email('Email tidak valid'),
+  email: z.email('Email tidak valid'),
   password: z.string().min(8, 'Password minimal 8 karakter'),
   confirmPassword: z.string().min(8, 'Password minimal 8 karakter'),
   phoneNumber: z.string().min(10, 'Nomor telepon tidak valid'),
-  provinces: z.string().min(1, 'Pilih provinsi'),
+  province: z.string().min(1, 'Pilih provinsi'),
   cities: z.string().min(1, 'Pilih kota/kabupaten'),
   address: z.string().min(10, 'Alamat minimal 10 karakter'),
 }).superRefine((data, ctx) => {
@@ -207,11 +211,22 @@ type Schema = z.output<typeof schema>
 async function onSubmit(payload: FormSubmitEvent<Schema>) {
   if (isSubmitting.value) return
 
+  // Validate token exists (required for pengajar registration)
+  if (!invitationToken) {
+    toast.add({
+      title: 'Token Tidak Valid',
+      description: 'Link registrasi tidak valid atau sudah kadaluarsa. Hubungi admin untuk mendapatkan link baru.',
+      color: 'error',
+      icon: 'i-lucide-alert-circle',
+    })
+    return
+  }
+
   isSubmitting.value = true
 
   try {
     // Find province and city names from codes
-    const selectedProvince = provinces.value.find(p => p.code === payload.data.provinces)
+    const selectedProvince = provinces.value.find(p => p.code === payload.data.province)
     const selectedCity = cities.value.find(c => c.code === payload.data.cities)
 
     if (!selectedProvince || !selectedCity) {
@@ -229,8 +244,8 @@ async function onSubmit(payload: FormSubmitEvent<Schema>) {
       address: payload.data.address,
     }
 
-    console.log('Sending register request:', registerData)
-    const response = await authApi.register(registerData)
+    console.log('Sending teacher register request with token:', invitationToken)
+    const response = await authApi.register(registerData, invitationToken)
 
     console.log('Register response:', response)
 
@@ -244,7 +259,7 @@ async function onSubmit(payload: FormSubmitEvent<Schema>) {
         clearFormFromStorage(STORAGE_KEY)
 
         toast.add({
-          title: 'Registrasi Berhasil',
+          title: 'Registrasi Pengajar Berhasil',
           description: response.message || 'Akun Anda telah dibuat. Silakan login.',
           color: 'success',
           icon: 'i-lucide-check-circle',
@@ -252,14 +267,14 @@ async function onSubmit(payload: FormSubmitEvent<Schema>) {
 
         // Redirect to login page after successful registration
         setTimeout(() => {
-          router.push('/auth/login')
+          router.push(`/auth/login?email=${encodeURIComponent(payload.data.email)}`)
         }, 1500)
       } else {
         throw new Error(response.message || 'Registrasi gagal')
       }
     }
   } catch (error: any) {
-    console.error('Registration error:', error)
+    console.error('Teacher registration error:', error)
 
     toast.add({
       title: 'Registrasi Gagal',

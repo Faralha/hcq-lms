@@ -2,20 +2,41 @@
   <div class="flex flex-col items-center justify-center min-h-screen gap-4 p-4">
     <UPageCard class="w-full max-w-md">
 
-      <!-- Auth Form -->
-      <UAuthForm :schema="schema" title="Login" description="Masukkan Kredensial untuk mengakses akun anda"
-        icon="i-lucide-user" :fields="fields" @submit="onSubmit">
+      <!-- Header -->
+      <div class="flex flex-col text-center mb-6">
+        <div class="mb-2">
+          <UIcon name="i-lucide-user" class="size-8 shrink-0 inline-block" />
+        </div>
+        <h1 class="text-xl text-pretty font-semibold text-highlighted">Login</h1>
+        <p class="mt-1 text-base text-pretty text-muted">Masukkan Kredensial untuk mengakses akun anda</p>
+      </div>
 
-        <!-- Daftar CTA Footer -->
-        <template #footer name="footer">
-          <div class="text-sm">
-            Belum punya akun?
-            <NuxtLink to="/auth/register" class="text-primary-600 hover:underline">
-              Daftar di sini
-            </NuxtLink>
-          </div>
-        </template>
-      </UAuthForm>
+      <!-- Form -->
+      <UForm :schema="schema" :state="state" @submit="onSubmit" class="space-y-5">
+        <UFormField label="Email" name="email" required class="w-full">
+          <UInput v-model="state.email" type="email" placeholder="fulan@gmail.com" class="w-full" />
+        </UFormField>
+
+        <UFormField label="Password" name="password" required class="w-full">
+          <UInput v-model="state.password" type="password" placeholder="Masukkan password Anda" class="w-full" />
+        </UFormField>
+
+        <UFormField name="remember" class="w-full">
+          <UCheckbox v-model="state.remember" label="Ingat saya" />
+        </UFormField>
+
+        <UButton type="submit" block :loading="isSubmitting" :disabled="isSubmitting">
+          Login
+        </UButton>
+      </UForm>
+
+      <!-- Footer -->
+      <div class="text-sm text-center text-muted mt-6">
+        Belum punya akun?
+        <NuxtLink to="/auth/register" class="text-primary-600 hover:underline">
+          Daftar di sini
+        </NuxtLink>
+      </div>
 
     </UPageCard>
   </div>
@@ -23,7 +44,7 @@
 
 <script setup lang="ts">
 import * as z from 'zod'
-import type { FormSubmitEvent, AuthFormField } from '@nuxt/ui'
+import type { FormSubmitEvent } from '@nuxt/ui'
 import type { LoginRequest } from '~/types/auth'
 
 definePageMeta({
@@ -34,28 +55,22 @@ definePageMeta({
 const toast = useToast()
 const authApi = useAuthApi()
 const router = useRouter()
+const route = useRoute()
 const { setUser } = useAuth()
 
 // Loading state
 const isSubmitting = ref(false)
 
-const fields: AuthFormField[] = [{
-  name: 'email',
-  type: 'email',
-  label: 'Email',
-  placeholder: 'fulan@gmail.com',
-  required: true
-}, {
-  name: 'password',
-  label: 'Password',
-  type: 'password',
-  placeholder: 'Masukkan password Anda',
-  required: true
-}, {
-  name: 'remember',
-  label: 'Ingat saya',
-  type: 'checkbox'
-}]
+// Get email and redirect from query parameters
+const emailFromQuery = route.query.email ? String(route.query.email) : ''
+const redirectTo = route.query.redirect ? String(route.query.redirect) : ''
+
+// Form state with email from query parameter
+const state = reactive({
+  email: emailFromQuery,
+  password: '',
+  remember: false,
+})
 
 const schema = z.object({
   email: z.string().email('Email tidak valid'),
@@ -140,8 +155,16 @@ async function onSubmit(payload: FormSubmitEvent<Schema>) {
         icon: 'i-lucide-check-circle',
       })
 
-      // Redirect based on role
+      // Redirect based on redirect query or role
       setTimeout(() => {
+        // If redirect query exists, use it
+        if (redirectTo) {
+          console.log('[Login] Redirecting to:', redirectTo)
+          router.push(redirectTo)
+          return
+        }
+
+        // Otherwise, redirect based on role
         if (userData.role) {
           const role = userData.role.toLowerCase()
           console.log('[Login] Redirecting to role:', role)

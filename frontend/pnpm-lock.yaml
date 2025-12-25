@@ -17,6 +17,9 @@ importers:
       '@tanstack/vue-table':
         specifier: ^8.21.3
         version: 8.21.3(vue@3.5.24(typescript@5.9.3))
+      idn-area-data:
+        specifier: ^4.0.0
+        version: 4.0.0
       nuxt:
         specifier: ^4.2.0
         version: 4.2.1(@parcel/watcher@2.5.1)(@vue/compiler-sfc@3.5.24)(db0@0.3.4)(ioredis@5.8.2)(lightningcss@1.30.2)(magicast@0.5.1)(rollup@4.53.2)(terser@5.44.1)(typescript@5.9.3)(vite@7.2.2(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.44.1)(yaml@2.8.1))(yaml@2.8.1)
@@ -2219,6 +2222,10 @@ packages:
     resolution: {integrity: sha512-v3MXnZAcvnywkTUEZomIActle7RXXeedOR31wwl7VlyoXO4Qi9arvSenNQWne1TcRwhCL1HwLI21bEqdpj8/rA==}
     engines: {node: '>=0.10.0'}
 
+  idn-area-data@4.0.0:
+    resolution: {integrity: sha512-qAiNR25Wa/QUcwJyRnoor0TNTyB8XWz7RkstkkY3poOqyQKuD4V/JSySmTq5s7vGZfT0NZ6YdqI9BS2kGob+TA==}
+    engines: {node: '>=22.0.0'}
+
   ieee754@1.2.1:
     resolution: {integrity: sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==}
 
@@ -2730,6 +2737,9 @@ packages:
 
   pako@0.2.9:
     resolution: {integrity: sha512-NUcwaKxUxWrZLpDG+z/xZaCgQITkA/Dv4V/T6bw7VON6l1Xz/VnrBqrYjZQ12TamKHzITTfOEIYUj48y2KXImA==}
+
+  papaparse@5.5.3:
+    resolution: {integrity: sha512-5QvjGxYVjxO59MGU2lHVYpRWBBtKHnlIAcSe1uNFCkkptUh63NFRj0FJQm7nR67puEruUci/ZkjmEFrjCAyP4A==}
 
   parse-path@7.1.0:
     resolution: {integrity: sha512-EuCycjZtfPcjWk7KTksnJ5xPMvWGA/6i4zrLYhRG0hGvC3GPU/jGUj3Cy+ZR0v30duV3e23R95T1lE2+lsndSw==}
@@ -6165,6 +6175,10 @@ snapshots:
     dependencies:
       safer-buffer: 2.1.2
 
+  idn-area-data@4.0.0:
+    dependencies:
+      papaparse: 5.5.3
+
   ieee754@1.2.1: {}
 
   ignore@7.0.5: {}
@@ -6861,6 +6875,8 @@ snapshots:
   package-manager-detector@1.5.0: {}
 
   pako@0.2.9: {}
+
+  papaparse@5.5.3: {}
 
   parse-path@7.1.0:
     dependencies:

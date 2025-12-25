@@ -13,6 +13,7 @@
     "@nuxt/ui": "^4.1.0",
     "@pinia/nuxt": "^0.11.3",
     "@tanstack/vue-table": "^8.21.3",
+    "idn-area-data": "^4.0.0",
     "nuxt": "^4.2.0",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",

@@ -9,6 +9,7 @@ import type {
   AuthUser,
   InvitePengajarRequest,
   InvitePengajarResponse,
+  ValidateInvitationResponse,
 } from "~/types/auth";
 import type { ApiResponse } from "~/types/api";
 
@@ -31,12 +32,15 @@ export const useAuthApi = () => {
 
   /**
    * Register new user
-   * POST /v1/auth/register
+   * POST /v1/auth/register (without token - PELAJAR)
+   * POST /v1/auth/register?token=xxx (with token - PENGAJAR)
    */
   const register = async (
-    data: RegisterRequest
+    data: RegisterRequest,
+    token?: string
   ): Promise<ApiResponse<RegisterResponse>> => {
-    return api.post<ApiResponse<RegisterResponse>>("auth/register", data);
+    const endpoint = token ? `auth/register?token=${token}` : "auth/register";
+    return api.post<ApiResponse<RegisterResponse>>(endpoint, data);
   };
 
   /**
@@ -140,6 +144,28 @@ export const useAuthApi = () => {
   };
 
   /**
+   * Validate pengajar invitation token
+   * GET /v1/auth/validate-invitation?token=xxx
+   *
+   * @param token - The invitation token from the magic link
+   * @returns Promise with validation status and email
+   *
+   * @example
+   * const { validateInvitation } = useAuthApi()
+   * const response = await validateInvitation('abc123def456...')
+   * if (response.valid) {
+   *   console.log('Token valid for email:', response.email)
+   * }
+   */
+  const validateInvitation = async (
+    token: string
+  ): Promise<ApiResponse<ValidateInvitationResponse>> => {
+    return api.get<ApiResponse<ValidateInvitationResponse>>(
+      `auth/validate-invitation?token=${token}`
+    );
+  };
+
+  /**
    * Change password
    * PATCH /v1/auth/change-password
    */
@@ -161,6 +187,7 @@ export const useAuthApi = () => {
     verifyEmail,
     resendVerification,
     invitePengajar,
+    validateInvitation,
     changePassword,
   };
 };

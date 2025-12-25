@@ -7,13 +7,20 @@
     </div>
 
     <!-- Invite Pengajar -->
-    <UModal>
-      <UButton label="Invite Pengajar" icon="i-lucide-user-plus" />
+    <UModal v-model:open="isInviteModalOpen" title="Undang Pengajar Baru"
+      description="Undang pengajar baru dengan magic link langsung ke inbox email.">
+      <UButton label="Invite Pengajar" icon="i-lucide-user-plus" @click="isInviteModalOpen = true" />
 
       <template #body>
-        <UForm>
-          <UFormField label="Email" name="email">
-            <UInput type="email" placeholder="teacher@gmail.com" />
+        <UForm :schema="inviteSchema" :state="inviteState" @submit="onInviteSubmit">
+          <UFormField label="Email" name="email" required class="w-full">
+            <UInput v-model="inviteState.email" type="email" placeholder="teacher@gmail.com" class="w-full" />
+          </UFormField>
+
+          <UFormField class="mt-4">
+            <UButton type="submit" block color="primary" :loading="isInviting" :disabled="isInviting">
+              Kirim Undangan
+            </UButton>
           </UFormField>
         </UForm>
       </template>
@@ -46,7 +53,8 @@
 
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
-import type { TableColumn, FormError, FormSubmitEvent, FormErrorEvent } from '@nuxt/ui'
+import * as z from 'zod'
+import type { TableColumn, FormSubmitEvent } from '@nuxt/ui'
 import type { User } from '~/composables/useUserApi'
 
 definePageMeta({
@@ -61,14 +69,24 @@ const UDropdownMenu = resolveComponent('UDropdownMenu')
 
 const toast = useToast()
 const { getAllUsers, deleteUser } = useUserApi()
+const { invitePengajar } = useAuthApi()
 
 // State
 const users = ref<User[]>([])
 const isLoading = ref(false)
+const isInviting = ref(false)
+const isInviteModalOpen = ref(false)
 const emailFilter = ref('')
 const table = useTemplateRef('table')
-const inviteForm = reactive({
-  email: undefined as string | undefined
+
+// Invite form state
+const inviteState = reactive({
+  email: '',
+})
+
+// Invite form validation schema
+const inviteSchema = z.object({
+  email: z.string().email('Email tidak valid'),
 })
 
 // Computed
@@ -178,6 +196,52 @@ const columns: TableColumn<User>[] = [
 ]
 
 // Methods
+async function onInviteSubmit(event: FormSubmitEvent<z.output<typeof inviteSchema>>) {
+  if (isInviting.value) return
+
+  isInviting.value = true
+
+  try {
+    const response = await invitePengajar(event.data.email)
+
+    if (response.status === 201 || response.status === 200) {
+      toast.add({
+        title: 'Undangan Terkirim',
+        description: `Link undangan telah dikirim ke ${event.data.email}`,
+        color: 'success',
+        icon: 'i-lucide-check-circle',
+      })
+
+      // Log magic link for development (in production this should be sent via email)
+      if (response.data?.magicLink) {
+        console.log('Magic Link:', response.data.magicLink)
+        toast.add({
+          title: 'Magic Link (Dev Mode)',
+          description: 'Link telah di-copy ke console. Buka console untuk melihat.',
+          color: 'info',
+          icon: 'i-lucide-info',
+        })
+      }
+
+      // Reset form and close modal
+      inviteState.email = ''
+      isInviteModalOpen.value = false
+    } else {
+      throw new Error(response.message || 'Gagal mengirim undangan')
+    }
+  } catch (error: any) {
+    console.error('[INVITE] Error:', error)
+    toast.add({
+      title: 'Gagal Mengirim Undangan',
+      description: error.message || error.data?.message || 'Terjadi kesalahan saat mengirim undangan',
+      color: 'error',
+      icon: 'i-lucide-alert-circle',
+    })
+  } finally {
+    isInviting.value = false
+  }
+}
+
 async function fetchUsers() {
   isLoading.value = true
   try {
