@@ -1,77 +1,49 @@
-import { getRegencies, getProvinces } from 'idn-area-data'
-
 export interface Regency {
-  code: string
-  name: string
-  provinceCode: string
+  code: string;
+  name: string;
+  provinceCode: string;
 }
 
 export interface Province {
-  code: string
-  name: string
+  code: string;
+  name: string;
 }
 
-/**
- * Get all regencies (kabupaten/kota) in Indonesia
- * @returns Promise<Regency[]>
- */
+
+
+// Fetch static Indonesian area data from public/indonesian-area.json
+interface IndonesianAreaData {
+  provinces: Province[];
+  cities: Regency[];
+}
+
+let cachedAreaData: IndonesianAreaData | null = null;
+
+async function fetchAreaData(): Promise<IndonesianAreaData> {
+  if (cachedAreaData) return cachedAreaData;
+  const res = await fetch('/indonesian-area.json');
+  if (!res.ok) throw new Error('Failed to fetch Indonesian area data');
+  cachedAreaData = await res.json();
+  return cachedAreaData;
+}
+
 export async function getIndonesianRegencies(): Promise<Regency[]> {
-  try {
-    const regenciesData = await getRegencies({ transform: true })
-    return regenciesData.map((r: any) => ({
-      code: r.code,
-      name: r.name,
-      provinceCode: r.provinceCode
-    }))
-  } catch (error) {
-    console.error('Failed to load regencies data:', error)
-    // Fallback to default cities in Banten province
-    return [
-      { code: '36.01', name: 'KABUPATEN PANDEGLANG', provinceCode: '36' },
-      { code: '36.02', name: 'KABUPATEN LEBAK', provinceCode: '36' },
-      { code: '36.03', name: 'KABUPATEN TANGERANG', provinceCode: '36' },
-      { code: '36.04', name: 'KABUPATEN SERANG', provinceCode: '36' },
-      { code: '36.71', name: 'KOTA TANGERANG', provinceCode: '36' },
-      { code: '36.72', name: 'KOTA CILEGON', provinceCode: '36' },
-      { code: '36.73', name: 'KOTA SERANG', provinceCode: '36' },
-      { code: '36.74', name: 'KOTA TANGERANG SELATAN', provinceCode: '36' }
-    ]
-  }
+  const data = await fetchAreaData();
+  return data.cities.map((r: any) => ({
+    code: r.code,
+    name: r.name,
+    provinceCode: r.province_code
+  }));
 }
 
-/**
- * Get all provinces in Indonesia
- * @returns Promise<Province[]>
- */
 export async function getIndonesianProvinces(): Promise<Province[]> {
-  try {
-    const provincesData = await getProvinces()
-    return provincesData.map((p: any) => ({
-      code: p.code,
-      name: p.name
-    }))
-  } catch (error) {
-    console.error('Failed to load provinces data:', error)
-    // Fallback to some major provinces
-    return [
-      { code: '11', name: 'ACEH' },
-      { code: '12', name: 'SUMATERA UTARA' },
-      { code: '31', name: 'DKI JAKARTA' },
-      { code: '32', name: 'JAWA BARAT' },
-      { code: '33', name: 'JAWA TENGAH' },
-      { code: '34', name: 'DI YOGYAKARTA' },
-      { code: '35', name: 'JAWA TIMUR' },
-      { code: '36', name: 'BANTEN' }
-    ]
-  }
+  const data = await fetchAreaData();
+  return data.provinces;
 }
 
-/**
- * Get regencies by province code
- * @param provinceCode - Province code (e.g., '36' for Banten)
- * @returns Promise<Regency[]>
- */
+
+// Utility: Get regencies by province code
 export async function getRegenciesByProvince(provinceCode: string): Promise<Regency[]> {
-  const allRegencies = await getIndonesianRegencies()
-  return allRegencies.filter(r => r.provinceCode === provinceCode)
+  const allRegencies = await getIndonesianRegencies();
+  return allRegencies.filter(r => r.provinceCode === provinceCode);
 }

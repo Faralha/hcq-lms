@@ -108,6 +108,7 @@ onMounted(async () => {
       getIndonesianProvinces(),
       getIndonesianRegencies()
     ])
+    console.log('Loaded Indonesian area data:', { regenciesData })
     provinces.value = provincesData
     allRegencies.value = regenciesData
 
