@@ -1,10 +1,15 @@
 <template>
-  <UHeader title="myLMS" toggle-side="right">
-    <!-- <template #title>
-      <Logo class="h-6 w-auto" />
-    </template> -->
+  <UHeader toggle-side="right">
+    <template #title>
+      <img src="/hcq.png" class="h-10 w-auto" />
+    </template>
 
     <UNavigationMenu :items="items" />
+
+    <div class="py-2">
+      <UButton v-if="user" label="Logout" icon="i-lucide-log-out" color="error" variant="solid" block
+        @click="handleLogout" />
+    </div>
 
     <template #right>
       <UColorModeButton />
@@ -74,10 +79,10 @@ const items = computed<NavigationMenuItem[]>(() => {
         open: true,
         children: [
           {
-            label: 'Users',
-            to: '/admin/users',
+            label: 'Pengguna',
+            to: '/admin/pengguna',
             icon: 'i-lucide-users',
-            active: route.path.startsWith('/admin/users')
+            active: route.path.startsWith('/admin/pengguna')
           },
           {
             label: 'Semester',
@@ -88,16 +93,16 @@ const items = computed<NavigationMenuItem[]>(() => {
           {
             label: 'Mata Pelajaran',
             to: '/admin/mata-pelajaran',
-            icon: 'i-lucide-book-marked',
+            icon: 'i-lucide-book',
             active: route.path.startsWith('/admin/mata-pelajaran')
           }
         ]
       },
       {
         label: 'Enrollment',
-        to: '/admin/enrollment',
+        to: '/admin/kelas',
         icon: 'i-lucide-calendar-plus',
-        active: route.path.startsWith('/admin/enrollment')
+        active: route.path.startsWith('/admin/kelas')
       },
       {
         label: 'Laporan',
@@ -114,7 +119,7 @@ const items = computed<NavigationMenuItem[]>(() => {
     ]
   }
 
-  // Pengajar menu items
+  // Pengajar menu items (match app/pages/pengajar/index.vue)
   if (userRole.value === 'PENGAJAR') {
     return [
       {
@@ -124,46 +129,37 @@ const items = computed<NavigationMenuItem[]>(() => {
         active: route.path === '/pengajar'
       },
       {
-        label: 'Mata Pelajaran',
-        to: '/pengajar/mata-pelajaran',
+        label: 'Kelas',
+        description: 'Lihat dan kelola Kelas yang Anda ajar',
+        to: '/pengajar/kelas',
         icon: 'i-lucide-book',
-        active: route.path.startsWith('/pengajar/mata-pelajaran')
-        // TODO: Submenu for class, fetch from backend
-      },
-      {
-        label: 'Pengunguman',
-        to: '/pengajar/announcements',
-        icon: 'i-lucide-megaphone',
-        active: route.path.startsWith('/pengajar/announcements')
-      },
-      {
-        label: 'Presensi',
-        to: '/pengajar/presensi',
-        icon: 'i-lucide-qr-code',
-        active: route.path.startsWith('/pengajar/presensi')
+        active: route.path.startsWith('/pengajar/kelas')
       },
       {
         label: 'Nilai',
+        description: 'Input dan kelola nilai siswa',
         to: '/pengajar/nilai',
         icon: 'i-lucide-clipboard-check',
         active: route.path.startsWith('/pengajar/nilai')
       },
       {
         label: 'Jadwal Mengajar',
+        description: 'Lihat jadwal mengajar Anda',
         to: '/pengajar/jadwal',
-        icon: 'i-lucide-calendar-check',
+        icon: 'i-lucide-calendar',
         active: route.path.startsWith('/pengajar/jadwal')
       },
       {
         label: 'Gaji',
+        description: 'Riwayat gaji dan slip gaji',
         to: '/pengajar/gaji',
         icon: 'i-lucide-banknote',
         active: route.path.startsWith('/pengajar/gaji')
-      },
+      }
     ]
   }
 
-  // Pelajar menu items
+  // Pelajar menu items (match app/pages/pelajar/index.vue)
   if (userRole.value === 'PELAJAR') {
     return [
       {
@@ -174,27 +170,31 @@ const items = computed<NavigationMenuItem[]>(() => {
       },
       {
         label: 'Kelas',
+        description: 'Lihat Kelas aktif yang diambil',
         to: '/pelajar/kelas',
-        icon: 'i-lucide-book-open',
+        icon: 'i-lucide-book',
         active: route.path.startsWith('/pelajar/kelas')
       },
       {
         label: 'Nilai',
+        description: 'Lihat nilai yang sudah keluar',
         to: '/pelajar/nilai',
-        icon: 'i-lucide-trophy',
+        icon: 'i-lucide-clipboard-check',
         active: route.path.startsWith('/pelajar/nilai')
       },
       {
-        label: 'Announcements',
-        to: '/pelajar/announcements',
-        icon: 'i-lucide-megaphone',
-        active: route.path.startsWith('/pelajar/announcements')
-      },
-      {
-        label: 'Biaya Pendidikan (SPP)',
+        label: 'Tagihan SPP',
+        description: 'Lihat dan bayar tagihan SPP',
         to: '/pelajar/spp',
         icon: 'i-lucide-banknote',
         active: route.path.startsWith('/pelajar/spp')
+      },
+      {
+        label: 'Rapor',
+        description: 'Lihat dan unduh rapor semester',
+        to: '/pelajar/rapor',
+        icon: 'i-lucide-file-text',
+        active: route.path.startsWith('/pelajar/rapor')
       }
     ]
   }
@@ -206,6 +206,12 @@ const items = computed<NavigationMenuItem[]>(() => {
       to: '/',
       icon: 'i-lucide-home',
       active: route.path === '/'
+    },
+    {
+      label: 'Login',
+      to: '/auth/login',
+      icon: 'i-lucide-log-in',
+      active: route.path === '/auth/login'
     }
   ]
 })
