@@ -9,6 +9,8 @@ export default defineNuxtConfig({
 
   ssr: false,
 
+  spaLoadingTemplate: 'spaLoading.html',
+
   runtimeConfig: {
     public: {
       apiBase: '',
