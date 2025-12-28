@@ -1,44 +1,20 @@
 <template>
-  <UHeader toggle-side="right">
-    <template #title>
+  <UDashboardSidebar 
+    :mode="mode"
+    class="bg-default w-auto"
+  >
+    <template #header>
       <img src="/hcq.png" class="h-10 w-auto" />
     </template>
 
-    <UNavigationMenu :items="items" />
+    <UNavigationMenu :items="items" orientation="vertical" />
+  </UDashboardSidebar>
 
-    <div class="py-2">
-      
-    </div>
-
-    <template #right>
-      <UColorModeButton />
-      <UButton v-if="user" icon="i-lucide-log-out" color="error" variant="solid" block class="w-auto"
-        @click="handleLogout" />
-      <UButton v-else label="Login" icon="i-lucide-log-in" color="primary" variant="solid" block class="w-auto"
-        :to="{ path: '/auth/login' }" />
+  <UDashboardPanel>
+    <template #header>
+      <UDashboardNavbar title="Dashboard" />
     </template>
-
-    <!-- Popup for mobile -->
-    <template #body>
-      <div class="flex flex-col min-h-full">
-        <div class="flex-1">
-          <UNavigationMenu :items="items" orientation="vertical" class="-mx-2.5" />
-        </div>
-
-        <USeparator />
-
-        <div class="mt-auto pt-4 ">
-          <UButton v-if="user" label="Logout" icon="i-lucide-log-out" color="error" variant="solid" block
-            @click="handleLogout" />
-          <UButton v-else label="Login" icon="i-lucide-log-in" color="primary" variant="solid" block class="w-auto"
-          :to="{ path: '/auth/login' }" />
-        </div>
-      </div>
-    </template>
-
-
-
-  </UHeader>
+  </UDashboardPanel>
 </template>
 
 
@@ -212,7 +188,17 @@ const items = computed<NavigationMenuItem[]>(() => {
       to: '/',
       icon: 'i-lucide-home',
       active: route.path === '/'
+    },
+    {
+      label: 'Login',
+      to: '/auth/login',
+      icon: 'i-lucide-log-in',
+      active: route.path === '/auth/login'
     }
   ]
 })
+
+defineProps<{
+  mode: 'drawer' | 'slideover' | 'modal'
+}>()
 </script>

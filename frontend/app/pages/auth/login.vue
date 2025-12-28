@@ -3,11 +3,11 @@
     <UPageCard class="w-full max-w-md">
 
       <!-- Header -->
-      <div class="flex flex-col text-center mb-6">
-        <div class="mb-2">
-          <UIcon name="i-lucide-user" class="size-8 shrink-0 inline-block" />
+      <div class="flex flex-col text-left mb-6">
+        <div class="py-6 items-center justify-center flex">
+          <img src="/hcq.png" class="h-12 w-auto" />
         </div>
-        <h1 class="text-xl text-pretty font-semibold text-highlighted">Login</h1>
+        <h1 class="text-2xl text-pretty font-semibold text-highlighted">Masuk</h1>
         <p class="mt-1 text-base text-pretty text-muted">Masukkan Kredensial untuk mengakses akun anda</p>
       </div>
 

@@ -123,6 +123,7 @@ const UDropdownMenu = resolveComponent('UDropdownMenu')
 
 definePageMeta({
   middleware: 'auth',
+  layout: 'menu',
   ssr: false,
 })
 

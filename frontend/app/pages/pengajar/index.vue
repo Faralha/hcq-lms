@@ -7,7 +7,13 @@
   </div>
 
   <!-- Overview -->
-  <!-- TO-DO: Add pengajar overview such as active semester, available course, etc -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <DashboardActiveSemester />
+    <DashboardTotalClassesCard />
+  </div>
+
+  <!-- TODO: Show list kelas -->
+  <PengajarDaftarKelasList />
 
   <!-- Menu Section -->
   <MenuSection title="Menu" :items="menuItems" />
