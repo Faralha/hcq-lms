@@ -1,5 +1,5 @@
 <template>
-  <UContainer class="py-4 space-y-8">
+  <div class="py-4 space-y-8">
     
     <!-- Header -->
     <div>
@@ -10,7 +10,7 @@
     <!-- Content -->
     <MenuSection title="Menu" :items="menuItems" />
 
-  </UContainer>
+  </div>
 </template>
 
 <script setup lang=ts>

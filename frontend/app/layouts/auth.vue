@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-elevated">
+  <div class="light:bg-elevated">
     <UContainer class="min-h-screen flex items-center justify-center">
       <slot />
     </UContainer>

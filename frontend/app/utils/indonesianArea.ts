@@ -24,7 +24,9 @@ async function fetchAreaData(): Promise<IndonesianAreaData> {
   const res = await fetch('/indonesian-area.json');
   if (!res.ok) throw new Error('Failed to fetch Indonesian area data');
   cachedAreaData = await res.json();
+  // @ts-ignore
   return cachedAreaData;
+  // @ts-check
 }
 
 export async function getIndonesianRegencies(): Promise<Regency[]> {
