@@ -82,6 +82,7 @@ RUN apt-get update && apt-get install -y \
     libxtst6 \
     lsb-release \
     xdg-utils \
+    nano \
     && rm -rf /var/lib/apt/lists/*
 
 # Install pnpm globally
