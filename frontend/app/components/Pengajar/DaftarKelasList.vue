@@ -6,7 +6,7 @@
     </div>
 
     <!-- Empty State -->
-    <div v-else-if="kelasMenuItems.length === 0" class="text-center py-12">
+    <div v-else-if="kelasMenuItems.length === 0" class="px-6 py-6 bg-default border border-default rounded-[10px] text-center">
       <UIcon name="i-lucide-inbox" class="w-16 h-16 mx-auto mb-4 text-[--ui-text-muted]" />
       <p class="text-lg font-medium text-[--ui-text-muted]">Tidak ada kelas tersedia</p>
       <p class="text-sm text-[--ui-text-muted]">Anda belum memiliki kelas untuk semester ini</p>

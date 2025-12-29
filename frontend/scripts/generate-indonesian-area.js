@@ -15,7 +15,7 @@ async function main() {
   const data = { provinces, cities };
 
   const outPath = path.join(
-    path.dirname(new URL(import.meta.url).pathname),
+    import.meta.dirname,
     "../public/indonesian-area.json"
   );
   fs.writeFileSync(outPath, JSON.stringify(data, null, 2), "utf-8");

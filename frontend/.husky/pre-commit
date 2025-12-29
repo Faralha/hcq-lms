@@ -1,0 +1,16 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 Sedang mengecek apakah Nuxt bisa di-build..."
+
+# Menjalankan build
+npm run build
+
+# Mengambil status dari perintah terakhir (build)
+# Jika build gagal (exit code bukan 0), maka commit akan dibatalkan otomatis.
+if [ $? -ne 0 ]; then
+  echo "❌ Build Gagal! Perbaiki kode Anda sebelum commit."
+  exit 1
+fi
+
+echo "✅ Build Berhasil. Melanjutkan commit..."

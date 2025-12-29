@@ -1,5 +1,5 @@
 <template>
-  <UContainer class="py-4 space-y-8">
+  <div class="py-4 space-y-8">
     <!-- Page Header -->
     <div>
       <h1 class="text-3xl font-bold">Rapor Management</h1>
@@ -107,7 +107,7 @@
         </UCard>
       </template>
     </UModal>
-  </UContainer>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -123,6 +123,7 @@ const UDropdownMenu = resolveComponent('UDropdownMenu')
 
 definePageMeta({
   middleware: 'auth',
+  layout: 'menu',
   ssr: false,
 })
 

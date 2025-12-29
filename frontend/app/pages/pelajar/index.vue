@@ -1,5 +1,5 @@
 <template>
-  <UContainer class="py-4 space-y-8">
+  <div class="py-4 space-y-8">
 
     <!-- Dashboard Greetings -->
     <div>
@@ -9,13 +9,18 @@
     </div>
 
     <!-- Overview -->
-    <!-- TO-DO: Add pelajar overview such as active semester, available course, etc -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <DashboardActiveSemester />
+      <DashboardTotalClassesCard />
+    </div>
 
+    <!-- TODO: Show list kelas -->
+    <PengajarDaftarKelasList basePath="/pelajar/kelas" />
+     
     <!-- Menu Section -->
     <MenuSection title="Menu" :items="menuItems" />
 
-
-  </UContainer>
+  </div>
 </template>
 
 <script setup lang="ts">
