@@ -2,7 +2,7 @@
   <div class="space-y-4">
     <div class="flex items-center justify-between">
       <h2 class="text-xl font-semibold">Materi Kelas</h2>
-      <UButton label="Tambah Section" icon="i-lucide-plus" size="sm" @click="openCreateSectionModal" />
+      <UButton label="Tambah Section" icon="i-lucide-plus" size="lg" @click="openCreateSectionModal" />
     </div>
 
     <!-- Loading State -->
