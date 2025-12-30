@@ -105,7 +105,7 @@ model PengajarInvitation {
 
 model Semester {
   id            String         @id @default(uuid())
-  nama          String
+  nama          String         @unique
   tanggalMulai  DateTime
   tanggalAkhir  DateTime
   status        SemesterStatus @default(MENDATANG)
