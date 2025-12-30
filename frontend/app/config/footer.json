@@ -1,0 +1,44 @@
+{
+    "logo": {
+        "image": "/hcq.png",
+        "subtitle": "Halaqoh Cinta Quran adalah lembaga pendidikan Al-Qur'an dibawah naungan YTU Qaulun Ma'rufun yang berbasis di Tangerang Selatan, Banten.",
+        "alt": "Halaqoh Cinta Quran"
+    },
+    "sections": [
+        {
+            "title": "Website",
+            "items": [
+                {
+                    "text": "hcq.my.id",
+                    "link": "https://hcq.my.id",
+                    "type": "link"
+                },
+                {
+                    "text": "qaulunmarufun.com",
+                    "link": "https://qaulunmarufun.com",
+                    "type": "link"
+                }
+            ]
+        },
+        {
+            "title": "Kontak",
+            "items": [
+                {
+                    "text": "+62 858-0315-4681",
+                    "link": "tel:+6285803154681",
+                    "type": "link"
+                }
+            ]
+        },
+        {
+            "title": "Alamat",
+            "items": [
+                {
+                    "text": "Jl. Sejahtera Blok A23 No. 8 PJMI Pondok Aren, Tangerang Selatan",
+                    "type": "text"
+                }
+            ]
+        }
+    ],
+    "copyright": "All rights reserved."
+}

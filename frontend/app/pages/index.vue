@@ -1,12 +1,22 @@
 <template>
-  <div>
-    <h1>HCQ Learning Management Systems.</h1>
-  </div>
+
+  <!-- Hero -->
+  <LandingHero />
+
+  <!-- Statistics -->
+  <LandingStatistics />
+
+  <USeparator />
 </template>
 
 <script setup lang="ts">
 const { user, isAuthenticated, fetchUser } = useAuth()
 const router = useRouter()
+
+definePageMeta({
+  layout: 'landing',
+  ssr: true,
+})
 
 onMounted(async () => {
   // Fetch user if not loaded
@@ -27,9 +37,8 @@ onMounted(async () => {
     }
   }
 })
-
 </script>
 
 <style scoped>
-
+/* Additional custom styles if needed */
 </style>
