@@ -11,6 +11,7 @@
 
 <script setup lang="ts">
 const { user, isAuthenticated, fetchUser } = useAuth()
+const { getAccessToken } = useTokens()
 const router = useRouter()
 
 definePageMeta({
@@ -19,8 +20,10 @@ definePageMeta({
 })
 
 onMounted(async () => {
-  // Fetch user if not loaded
-  if (!user.value) {
+  // Only fetch user if we have an access token and user is not loaded
+  const hasToken = !!getAccessToken()
+  
+  if (!user.value && hasToken) {
     await fetchUser()
   }
 

@@ -43,6 +43,13 @@ export const useAuthStore = defineStore("auth", {
     async fetchUser() {
       if (this.isLoading) return;
 
+      // Don't fetch if no access token exists
+      const { getAccessToken } = useTokens();
+      if (!getAccessToken()) {
+        console.log("[authStore] No access token, skipping fetchUser");
+        return;
+      }
+
       this.isLoading = true;
       try {
         const authApi = useAuthApi();
