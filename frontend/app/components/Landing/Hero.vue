@@ -1,11 +1,11 @@
 <template>
-    <div class="relative h-[40rem] overflow-hidden">
+    <div class="relative h-160 overflow-hidden">
     <!-- Background Image -->
     <NuxtImg
-      src="landing.jpg"
-      alt="Background"
+      src="landing.webp"
+      alt="Landing Background portraying students learning Qur'an"
       class="absolute inset-0 w-full h-full object-cover"
-      loading="eager"
+      preload
     />
     
     <!-- Overlay for better text readability -->

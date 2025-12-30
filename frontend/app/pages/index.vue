@@ -4,7 +4,7 @@
   <LandingHero />
 
   <!-- Statistics -->
-  <LandingStatistics />
+  <LandingStatistics2 />
 
   <USeparator />
 </template>
@@ -19,10 +19,17 @@ definePageMeta({
   ssr: true,
 })
 
+useSeoMeta({
+  title: 'HCQ - Home',
+  ogTitle: 'HCQ - Home',
+  description: "Halaqoh Cinta Qur'an (HCQ) adalah lembaga pembelajaran Al-Qur'an terpecaya. Kami menawarkan program Tahsin dan Tahfidz berkualitas untuk membantu anda memperbaiki bacaan dan menghafal Al-Qur'an.",
+  ogDescription: "Halaqoh Cinta Qur'an (HCQ) adalah lembaga pembelajaran Al-Qur'an terpecaya. Kami menawarkan program Tahsin dan Tahfidz berkualitas untuk membantu anda memperbaiki bacaan dan menghafal Al-Qur'an.",
+})
+
 onMounted(async () => {
   // Only fetch user if we have an access token and user is not loaded
   const hasToken = !!getAccessToken()
-  
+
   if (!user.value && hasToken) {
     await fetchUser()
   }

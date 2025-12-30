@@ -4,10 +4,31 @@ export default defineNuxtConfig({
   
   devtools: { enabled: true },
 
-  modules: ['@nuxt/ui', '@pinia/nuxt', '@nuxt/image'],
+  modules: ['@nuxt/ui', '@pinia/nuxt', '@nuxt/image', 'motion-v/nuxt'],
   css: ['~/assets/css/main.css'],
 
-  ssr: false,
+  ssr: true,
+
+  routeRules: {
+
+    // Disable SSR as base
+    '/**': { ssr: false },
+    
+    // Enable SSR for homepage
+    '/': { ssr: true },
+
+    // Also enable for About
+    '/about': { ssr: true },
+  },
+
+  app: {
+    head: {
+      title: 'HCQ LMS',
+      htmlAttrs: {
+        lang: 'id',
+      }
+    }
+  },
 
   spaLoadingTemplate: 'spaLoading.html',
 
