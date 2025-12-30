@@ -207,12 +207,12 @@ const items = computed<NavigationMenuItem[]>(() => {
 
   // Default/guest menu items
   return [
-    {
-      label: 'Home',
-      to: '/',
-      icon: 'i-lucide-home',
-      active: route.path === '/'
-    }
+    // {
+    //   label: 'Home',
+    //   to: '/',
+    //   icon: 'i-lucide-home',
+    //   active: route.path === '/'
+    // }
   ]
 })
 </script>
