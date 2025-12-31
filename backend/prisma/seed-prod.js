@@ -4,6 +4,8 @@ const argon2 = require('argon2');
 
 const prisma = new PrismaClient();
 
+const adminPassword = "PROD_ADMIN_PASSWORD_REMOVED"
+
 async function main() {
   console.log('🌱 Seeding production database...');
 
@@ -17,11 +19,11 @@ async function main() {
     console.log('⏭️  Skipping admin creation');
   } else {
     // Create Admin User with secure password
-    const adminPassword = await argon2.hash('PROD_ADMIN_PASSWORD_REMOVED');
+    const adminPasswordHashed = await argon2.hash(adminPassword);
     const admin = await prisma.user.create({
       data: {
         email: 'admin@hcq.com',
-        password: adminPassword,
+        password: adminPasswordHashed,
         nama: 'Administrator',
         role: Role.ADMIN,
       },

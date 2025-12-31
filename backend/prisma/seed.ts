@@ -55,10 +55,9 @@ async function main() {
 
   // Create Sample Semester
   const semester = await prisma.semester.upsert({
-    where: { id: 'semester-1' },
+    where: { nama: 'Ganjil 2025/2026' },
     update: {},
     create: {
-      id: 'semester-1',
       nama: 'Ganjil 2025/2026',
       tanggalMulai: new Date('2025-08-01'),
       tanggalAkhir: new Date('2025-12-31'),
