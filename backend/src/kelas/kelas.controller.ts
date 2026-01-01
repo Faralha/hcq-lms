@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
+  Req,
 } from '@nestjs/common';
 import { KelasService } from './kelas.service';
 import {
@@ -19,6 +20,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Role } from '@prisma/client';
+import type { Request } from 'express';
 
 @Controller('kelas')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -32,13 +34,13 @@ export class KelasController {
   }
 
   @Get()
-  findAll() {
-    return this.kelasService.findAll();
+  findAll(@Req() req: Request) {
+    return this.kelasService.findAll(req.user!.sub, req.user!.role as Role);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.kelasService.findOne(id);
+  findOne(@Param('id') id: string, @Req() req: Request) {
+    return this.kelasService.findOne(id, req.user!.sub, req.user!.role as Role);
   }
 
   @Patch(':id')
