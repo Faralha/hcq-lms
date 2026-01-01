@@ -81,7 +81,6 @@ async function fetchDashboardStats() {
     const subjects = subjectsRes.status === 200 && subjectsRes.data ? subjectsRes.data : []
 
     // Find active and upcoming semester
-    const activeSemester = semesters.find(s => s.status === 'AKTIF')
     const upcomingSemester = semesters.find(s => s.status === 'MENDATANG')
 
     stats.value = {
@@ -165,6 +164,7 @@ const updateClock = () => {
 
 // Update clock setiap detik
 onMounted(() => {
+  fetchDashboardStats()
   updateClock() // Set initial value
   const interval = setInterval(updateClock, 1000)
   // Cleanup interval saat component unmounted
