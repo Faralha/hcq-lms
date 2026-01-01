@@ -16,6 +16,7 @@ import { SppModule } from './spp/spp.module';
 import { GajiModule } from './gaji/gaji.module';
 import { MateriModule } from './materi/materi.module';
 import { RaporModule } from './rapor/rapor.module';
+import { S3Module } from './s3/s3.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { RaporModule } from './rapor/rapor.module';
     GajiModule,
     MateriModule,
     RaporModule,
+    S3Module,
   ],
   controllers: [AppController],
   providers: [AppService],

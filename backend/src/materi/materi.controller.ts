@@ -21,10 +21,8 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { memoryStorage } from 'multer';
 import type { Response, Request } from 'express';
-import * as fs from 'fs';
 
 @Controller('materi')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -72,15 +70,7 @@ export class MateriController {
   @Roles('PENGAJAR')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: diskStorage({
-        destination: './uploads',
-        filename: (req, file, callback) => {
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          callback(null, `${file.fieldname}-${uniqueSuffix}${ext}`);
-        },
-      }),
+      storage: memoryStorage(),
       limits: {
         fileSize: 50 * 1024 * 1024, // 50MB
       },
@@ -131,13 +121,11 @@ export class MateriController {
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { file, filePath } = await this.materiService.getFileById(id);
-
-    const stream = fs.createReadStream(filePath);
+    const { file, stream } = await this.materiService.getFileById(id);
 
     res.set({
       'Content-Type': file.mimetype || 'application/octet-stream',
-      'Content-Disposition': `attachment; filename="${file.filename}"`,
+      'Content-Disposition': `attachment; filename="${encodeURIComponent(file.filename)}"`,
       'Content-Length': file.size || 0,
     });
 
