@@ -40,7 +40,8 @@
     <!-- Menu Section -->
     <MenuSection title="Menu" :items="menuItems" />
 
-
+    <!-- List Kelas -->
+    <PengajarDaftarKelasList />
   </div>
 </template>
 
@@ -58,8 +59,6 @@ const toast = useToast()
 
 // Composables for fetching data
 const { getAllSemesters } = useSemesterApi()
-const { getAllKelas } = useKelasApi()
-const { getAllUsers } = useUserApi()
 const { getAllMataPelajaran } = useMataPelajaranApi()
 
 // Dashboard stats
@@ -119,7 +118,7 @@ const menuItems: MenuItem[] = [
     to: '/admin/mata-pelajaran'
   },
   {
-    label: 'Enrollment',
+    label: 'Kelas',
     description: 'Atur Kelas',
     icon: 'i-lucide-calendar-plus',
     to: '/admin/kelas'
@@ -138,13 +137,13 @@ const menuItems: MenuItem[] = [
   },
   {
     label: 'Announcements',
-    description: 'Manage Announcements',
+    description: 'Atur Pengunguman',
     icon: 'i-lucide-megaphone',
     to: '/admin/announcements'
   },
   {
     label: 'Rapor',
-    description: 'Manage Rapor',
+    description: 'Atur Rapor',
     icon: 'i-lucide-file-text',
     to: '/admin/rapor'
   },

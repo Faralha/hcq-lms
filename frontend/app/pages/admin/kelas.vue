@@ -16,7 +16,7 @@
             <h3 class="text-lg font-semibold">{{ isEditing ? 'Edit' : 'Tambah' }} Kelas</h3>
           </template>
 
-          <UForm :state="form" @submit="onSubmit" class="space-y-4">
+          <UForm :schema="schema" :state="form" @submit="onSubmit" class="space-y-4">
             <UFormField label="Nama Kelas" name="namaKelas" required>
               <UInput class="w-full" v-model="form.namaKelas" placeholder="Kelas A - Tahfidz" />
             </UFormField>
@@ -105,10 +105,8 @@
               </div>
             </div>
 
-            <div class="flex justify-end">
-              <UButton color="neutral" variant="outline" @click="closeEnrollModal">
-                Tutup
-              </UButton>
+            <div class="w-full">
+              <UButton label="Selesai" color="secondary" variant="outline" size="lg" @click="closeEnrollModal" class="justify-center w-full" />
             </div>
           </div>
         </UCard>
@@ -137,11 +135,15 @@
         {{ filteredCount }} kelas ditemukan
       </div>
     </div>
+
+    <PengajarDaftarKelasList title="Detail Kelas" />
+
   </div>
 </template>
 
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
+import * as z from 'zod'
 import type { TableColumn } from '@nuxt/ui'
 
 definePageMeta({
@@ -180,7 +182,18 @@ const isSubmitting = ref(false)
 const isEnrolling = ref(false)
 const selectedKelas = ref<Kelas | null>(null)
 
-const form = ref({
+const schema = z.object({
+  id: z.string().optional(),
+  namaKelas: z.string().min(1, 'Nama kelas wajib diisi'),
+  semesterId: z.string().min(1, 'Semester wajib dipilih'),
+  mataPelajaranId: z.string().min(1, 'Mata pelajaran wajib dipilih'),
+  jadwalHari: z.string().min(1, 'Jadwal hari wajib diisi'),
+  jadwalJam: z.string().min(1, 'Jadwal jam wajib diisi')
+})
+
+type KelasSchema = z.output<typeof schema>
+
+const form = reactive<Partial<KelasSchema>>({
   id: '',
   namaKelas: '',
   semesterId: '',
@@ -376,27 +389,23 @@ async function fetchUsers() {
 
 function openCreateModal() {
   isEditing.value = false
-  form.value = {
-    id: '',
-    namaKelas: '',
-    semesterId: '',
-    mataPelajaranId: '',
-    jadwalHari: '',
-    jadwalJam: ''
-  }
+  form.id = ''
+  form.namaKelas = ''
+  form.semesterId = ''
+  form.mataPelajaranId = ''
+  form.jadwalHari = ''
+  form.jadwalJam = ''
   isModalOpen.value = true
 }
 
 function handleEdit(kelas: KelasType) {
   isEditing.value = true
-  form.value = {
-    id: kelas.id,
-    namaKelas: kelas.namaKelas,
-    semesterId: kelas.semesterId,
-    mataPelajaranId: kelas.mataPelajaranId,
-    jadwalHari: kelas.jadwalHari,
-    jadwalJam: kelas.jadwalJam
-  }
+  form.id = kelas.id
+  form.namaKelas = kelas.namaKelas
+  form.semesterId = kelas.semesterId
+  form.mataPelajaranId = kelas.mataPelajaranId
+  form.jadwalHari = kelas.jadwalHari
+  form.jadwalJam = kelas.jadwalJam
   isModalOpen.value = true
 }
 
@@ -420,18 +429,18 @@ async function onSubmit() {
   isSubmitting.value = true
   try {
     const payload = {
-      namaKelas: form.value.namaKelas,
-      semesterId: form.value.semesterId,
-      mataPelajaranId: form.value.mataPelajaranId,
-      jadwalHari: form.value.jadwalHari,
-      jadwalJam: form.value.jadwalJam
+      namaKelas: form.namaKelas || '',
+      semesterId: form.semesterId || '',
+      mataPelajaranId: form.mataPelajaranId || '',
+      jadwalHari: form.jadwalHari || '',
+      jadwalJam: form.jadwalJam || ''
     }
 
     console.log('Submitting kelas with payload:', payload)
 
     let response
     if (isEditing.value) {
-      response = await updateKelas(form.value.id, payload)
+      response = await updateKelas(form.id || '', payload)
     } else {
       response = await createKelas(payload)
     }

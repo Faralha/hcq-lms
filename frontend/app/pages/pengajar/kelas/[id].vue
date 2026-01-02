@@ -9,12 +9,14 @@
       </p>
     </div>
 
-    <!-- Tombol Mulai Sesi Presensi -->
+    <!-- Action Buttons / Shortcut -->
     <div class="flex gap-3 flex-wrap">
       <UButton label="Mulai Sesi Presensi" icon="i-lucide-qr-code" size="lg" :loading="isStartingSession"
         :disabled="hasActiveSession" @click="handleStartSession" />
-      <UButton label="Tambah Announcement" icon="i-lucide-megaphone" size="lg" color="primary" variant="outline"
-        @click="announcementComponent?.openModal()" />
+      <UButton label="Tambah Nilai" icon="i-lucide-clipboard-plus" size="lg" color="secondary" variant="solid"
+        @click="router.push(`/pengajar/nilai/${route.params.id}`)" />
+      <UButton label="Tambah Pengunguman" icon="i-lucide-megaphone" size="lg" color="primary" variant="outline"
+        @click="announcementComponent?.openModal()" />      
     </div>
 
     <!-- Kode Presensi Aktif (jika ada) -->
@@ -74,6 +76,7 @@ definePageMeta({
   ssr: false
 })
 
+const router = useRouter()
 const route = useRoute()
 const toast = useToast()
 const kelasId = computed(() => route.params.id as string)

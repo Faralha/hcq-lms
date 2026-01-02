@@ -26,6 +26,52 @@
       </template>
     </UModal>
 
+    <!-- Edit User Modal -->
+    <UModal v-model:open="isEditModalOpen">
+      <template #content>
+        <UCard>
+          <template #header>
+            <h3 class="text-lg font-semibold">Edit User</h3>
+          </template>
+
+          <UForm :schema="editSchema" :state="editForm" @submit="onEditSubmit" class="space-y-4">
+            <UFormField label="Nama" name="nama" required>
+              <UInput class="w-full" v-model="editForm.nama" placeholder="Fulan" />
+            </UFormField>
+
+            <UFormField label="Email" name="email" required>
+              <UInput class="w-full" v-model="editForm.email" type="email" placeholder="fulan@gmail.com" />
+            </UFormField>
+
+            <UFormField label="Nama Lengkap" name="fullName">
+              <UInput class="w-full" v-model="editForm.fullName" placeholder="Ahmad Fulan" />
+            </UFormField>
+
+            <UFormField label="Kota" name="cities">
+              <UInput class="w-full" v-model="editForm.cities" placeholder="Jakarta" />
+            </UFormField>
+
+            <UFormField label="Alamat" name="address">
+              <UTextarea class="w-full" v-model="editForm.address" placeholder="Jl. Merak No. 123" :rows="3" />
+            </UFormField>
+
+            <UFormField label="Nomor Telepon" name="phoneNumber">
+              <UInput class="w-full" v-model="editForm.phoneNumber" placeholder="081234567890" />
+            </UFormField>
+
+            <div class="w-full flex flex-col items-center gap-3">
+              <UButton class="w-full justify-center" type="submit" :loading="isEditing">
+                Update
+              </UButton>
+              <UButton class="w-full justify-center" color="error" variant="outline" @click="closeEditModal">
+                Batal
+              </UButton>
+            </div>
+          </UForm>
+        </UCard>
+      </template>
+    </UModal>
+
     <!-- Tableview -->
     <div class="flex flex-col flex-1 w-full border border-accented rounded-lg overflow-hidden">
       <!-- Filter & Actions Bar -->
@@ -68,7 +114,7 @@ const UButton = resolveComponent('UButton')
 const UDropdownMenu = resolveComponent('UDropdownMenu')
 
 const toast = useToast()
-const { getAllUsers, deleteUser } = useUserApi()
+const { getAllUsers, deleteUser, updateUser } = useUserApi()
 const { invitePengajar } = useAuthApi()
 
 // State
@@ -76,6 +122,8 @@ const users = ref<User[]>([])
 const isLoading = ref(false)
 const isInviting = ref(false)
 const isInviteModalOpen = ref(false)
+const isEditModalOpen = ref(false)
+const isEditing = ref(false)
 const emailFilter = ref('')
 const table = useTemplateRef('table')
 
@@ -87,6 +135,29 @@ const inviteState = reactive({
 // Invite form validation schema
 const inviteSchema = z.object({
   email: z.string().email('Email tidak valid'),
+})
+
+// Edit form state
+const editSchema = z.object({
+  id: z.string(),
+  nama: z.string().min(1, 'Nama wajib diisi'),
+  email: z.string().email('Email tidak valid'),
+  fullName: z.string().optional(),
+  cities: z.string().optional(),
+  address: z.string().optional(),
+  phoneNumber: z.string().optional()
+})
+
+type EditSchema = z.output<typeof editSchema>
+
+const editForm = reactive<Partial<EditSchema>>({
+  id: '',
+  nama: '',
+  email: '',
+  fullName: '',
+  cities: '',
+  address: '',
+  phoneNumber: ''
 })
 
 // Computed
@@ -276,12 +347,66 @@ async function fetchUsers() {
 }
 
 function handleEdit(user: User) {
-  toast.add({
-    title: 'Edit User',
-    description: `Editing ${user.nama}`,
-    color: 'info',
-    icon: 'i-lucide-edit'
-  })
+  editForm.id = user.id
+  editForm.nama = user.nama
+  editForm.email = user.email
+  editForm.fullName = user.fullName || ''
+  editForm.cities = user.cities || ''
+  editForm.address = user.address || ''
+  editForm.phoneNumber = user.phoneNumber || ''
+  isEditModalOpen.value = true
+}
+
+function closeEditModal() {
+  isEditModalOpen.value = false
+  editForm.id = ''
+  editForm.nama = ''
+  editForm.email = ''
+  editForm.fullName = ''
+  editForm.cities = ''
+  editForm.address = ''
+  editForm.phoneNumber = ''
+}
+
+async function onEditSubmit() {
+  if (isEditing.value) return
+
+  isEditing.value = true
+
+  try {
+    const payload = {
+      nama: editForm.nama || '',
+      email: editForm.email || '',
+      fullName: editForm.fullName || undefined,
+      cities: editForm.cities || undefined,
+      address: editForm.address || undefined,
+      phoneNumber: editForm.phoneNumber || undefined
+    }
+
+    const response = await updateUser(editForm.id || '', payload)
+
+    if (response.status === 200) {
+      toast.add({
+        title: 'User updated successfully',
+        color: 'success',
+        icon: 'i-lucide-check-circle'
+      })
+
+      closeEditModal()
+      await fetchUsers()
+    } else {
+      throw new Error(response.message || 'Failed to update user')
+    }
+  } catch (error: any) {
+    toast.add({
+      title: 'Error updating user',
+      description: error.message,
+      color: 'error',
+      icon: 'i-lucide-alert-circle'
+    })
+  } finally {
+    isEditing.value = false
+  }
 }
 
 async function handleDelete(user: User) {

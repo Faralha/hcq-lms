@@ -16,7 +16,7 @@
             <h3 class="text-lg font-semibold">{{ isEditing ? 'Edit' : 'Tambah' }} Semester</h3>
           </template>
 
-          <UForm :state="form" @submit="onSubmit" class="space-y-4">
+          <UForm :schema="schema" :state="form" @submit="onSubmit" class="space-y-4">
             <UFormField label="Nama Semester" name="nama" required>
               <UInput class="w-full" v-model="form.nama" placeholder="Ganjil 2025/2026" />
             </UFormField>
@@ -72,8 +72,9 @@
 </template>
 
 <script setup lang="ts">
+import * as z from 'zod'
 import type { TableColumn } from '@nuxt/ui'
-import type { Semester } from '~/composables/useSemesterApi'
+import type { Semester, CreateSemesterRequest } from '~/composables/useSemesterApi'
 
 definePageMeta({
   layout: 'menu',
@@ -97,7 +98,23 @@ const isSubmitting = ref(false)
 const namaFilter = ref('')
 const table = useTemplateRef('table')
 
-const form = ref({
+const schema = z.object({
+  id: z.string().optional(),
+  nama: z.string().min(1, 'Nama semester wajib diisi'),
+  tanggalMulai: z.string().min(1, 'Tanggal mulai wajib diisi').refine(
+    (val) => !isNaN(Date.parse(val)),
+    'Tanggal mulai harus valid'
+  ),
+  tanggalAkhir: z.string().min(1, 'Tanggal akhir wajib diisi').refine(
+    (val) => !isNaN(Date.parse(val)),
+    'Tanggal akhir harus valid'
+  ),
+  status: z.enum(['AKTIF', 'MENDATANG', 'SELESAI'])
+})
+
+type Schema = z.output<typeof schema>
+
+const form = reactive<Partial<Schema>>({
   id: '',
   nama: '',
   tanggalMulai: '',
@@ -234,28 +251,26 @@ async function fetchSemesters() {
 function closeModal() {
   isModalOpen.value = false
   isEditing.value = false
-  form.value = {
-    id: '',
-    nama: '',
-    tanggalMulai: '',
-    tanggalAkhir: '',
-    status: 'AKTIF'
-  }
+  form.nama = ''
+  form.tanggalMulai = ''
+  form.tanggalAkhir = ''
+  form.status = 'AKTIF'
+  form.id = ''
 }
 
 async function onSubmit() {
   isSubmitting.value = true
   try {
-    const payload = {
-      nama: form.value.nama,
-      tanggalMulai: form.value.tanggalMulai,
-      tanggalAkhir: form.value.tanggalAkhir,
-      status: form.value.status
+    const payload: CreateSemesterRequest = {
+      nama: form.nama || '',
+      tanggalMulai: form.tanggalMulai || '',
+      tanggalAkhir: form.tanggalAkhir || '',
+      status: form.status as 'AKTIF' | 'MENDATANG' | 'SELESAI'
     }
 
     let response
     if (isEditing.value) {
-      response = await updateSemester(form.value.id, payload)
+      response = await updateSemester(form.id || '', payload)
     } else {
       response = await createSemester(payload)
     }
@@ -284,13 +299,11 @@ async function onSubmit() {
 
 function handleEdit(semester: Semester) {
   isEditing.value = true
-  form.value = {
-    id: semester.id,
-    nama: semester.nama,
-    tanggalMulai: new Date(semester.tanggalMulai).toISOString().split('T')[0] || '',
-    tanggalAkhir: new Date(semester.tanggalAkhir).toISOString().split('T')[0] || '',
-    status: semester.status as 'AKTIF' | 'MENDATANG' | 'SELESAI'
-  }
+  form.id = semester.id
+  form.nama = semester.nama
+  form.tanggalMulai = (typeof semester.tanggalMulai === 'string' ? semester.tanggalMulai : new Date(semester.tanggalMulai).toISOString().split('T')[0]) || ''
+  form.tanggalAkhir = (typeof semester.tanggalAkhir === 'string' ? semester.tanggalAkhir : new Date(semester.tanggalAkhir).toISOString().split('T')[0]) || ''
+  form.status = semester.status as 'AKTIF' | 'MENDATANG' | 'SELESAI'
   isModalOpen.value = true
 }
 
