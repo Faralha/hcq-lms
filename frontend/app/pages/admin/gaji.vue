@@ -14,7 +14,7 @@
             <h3 class="text-lg font-semibold">{{ isEditing ? 'Edit' : 'Tambah' }} Gaji Guru</h3>
           </template>
 
-          <UForm :state="form" @submit="onSubmit" class="space-y-4">
+          <UForm :schema="schema" :state="form" @submit="onSubmit" class="space-y-4">
             <UFormField label="Pengajar" name="userId" required>
               <USelect class="w-full" v-model="form.userId" :items="pengajarOptions" placeholder="Pilih Pengajar"
                 :disabled="isEditing" />
@@ -89,6 +89,7 @@
 
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
+import * as z from 'zod'
 import type { TableColumn } from '@nuxt/ui'
 import type { Gaji } from '~/composables/useGajiApi'
 
@@ -117,7 +118,18 @@ const isModalOpen = ref(false)
 const isEditing = ref(false)
 const isSubmitting = ref(false)
 
-const form = ref({
+const schema = z.object({
+  id: z.string().optional(),
+  userId: z.string().min(1, 'Pengajar wajib dipilih'),
+  bulan: z.string().min(1, 'Bulan wajib dipilih'),
+  tahun: z.number().min(2000, 'Tahun tidak valid'),
+  nominal: z.number().min(1, 'Nominal harus lebih dari 0'),
+  status: z.enum(['BELUM_LUNAS', 'LUNAS'])
+})
+
+type GajiSchema = z.output<typeof schema>
+
+const form = reactive<Partial<GajiSchema>>({
   id: '',
   userId: '',
   bulan: '',
@@ -313,48 +325,49 @@ async function fetchPengajar() {
 function openCreateModal() {
   isEditing.value = false
   const currentMonth = new Date().toLocaleDateString('id-ID', { month: 'long' })
-  form.value = {
-    id: '',
-    userId: '',
-    bulan: currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1),
-    tahun: new Date().getFullYear(),
-    nominal: 3000000,
-    status: 'BELUM_LUNAS'
-  }
+  form.bulan = currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1)
+  form.tahun = new Date().getFullYear()
+  form.nominal = 3000000
+  form.userId = ''
+  form.status = 'BELUM_LUNAS'
   isModalOpen.value = true
 }
 
 function handleEdit(gaji: Gaji) {
   isEditing.value = true
-  form.value = {
-    id: gaji.id,
-    userId: gaji.userId,
-    bulan: gaji.bulan,
-    tahun: gaji.tahun,
-    nominal: gaji.nominal,
-    status: gaji.status
-  }
+  form.id = gaji.id
+  form.userId = gaji.userId
+  form.bulan = gaji.bulan
+  form.tahun = gaji.tahun
+  form.nominal = gaji.nominal
+  form.status = gaji.status as 'BELUM_LUNAS' | 'LUNAS'
   isModalOpen.value = true
 }
 
 function closeModal() {
   isModalOpen.value = false
+  form.id = ''
+  form.userId = ''
+  form.bulan = ''
+  form.tahun = new Date().getFullYear()
+  form.nominal = 3000000
+  form.status = 'BELUM_LUNAS'
 }
 
 async function onSubmit() {
   isSubmitting.value = true
   try {
     const payload = {
-      userId: form.value.userId,
-      bulan: form.value.bulan,
-      tahun: form.value.tahun,
-      nominal: form.value.nominal,
-      status: form.value.status
+      userId: form.userId || '',
+      bulan: form.bulan || '',
+      tahun: form.tahun || new Date().getFullYear(),
+      nominal: form.nominal || 0,
+      status: form.status as 'BELUM_LUNAS' | 'LUNAS'
     }
 
     let response
     if (isEditing.value) {
-      response = await updateGaji(form.value.id, {
+      response = await updateGaji(form.id || '', {
         nominal: payload.nominal,
         status: payload.status
       })

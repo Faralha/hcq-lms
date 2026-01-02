@@ -166,3 +166,18 @@ export interface Spp {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface AcademicRemark {
+  id: string;
+  userId: string;
+  kelasId: string;
+  semesterId: string;
+  catatan: string;
+  user?: User;
+  kelas?: Kelas & {
+    mataPelajaran?: MataPelajaran;
+  };
+  semester?: Semester;
+  createdAt: string;
+  updatedAt: string;
+}

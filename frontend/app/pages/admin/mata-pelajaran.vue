@@ -14,7 +14,7 @@
         <UCard>
           <h3 class="text-lg font-semibold mb-4">{{ isEditing ? 'Edit' : 'Tambah' }} Mata Pelajaran</h3>
 
-          <UForm :state="form" @submit="onSubmit" class="space-y-4 w-full">
+          <UForm :schema="schema" :state="form" @submit="onSubmit" class="space-y-4 w-full">
             <UFormField label="Nama Mata Pelajaran" name="nama" required>
               <UInput class="inputStyle" v-model="form.nama" placeholder="Tahfidz Qur'an" />
             </UFormField>
@@ -74,6 +74,7 @@
 
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
+import * as z from 'zod'
 import type { TableColumn } from '@nuxt/ui'
 
 definePageMeta({
@@ -104,7 +105,16 @@ const isModalOpen = ref(false)
 const isEditing = ref(false)
 const isSubmitting = ref(false)
 
-const form = ref({
+const schema = z.object({
+  id: z.string().optional(),
+  nama: z.string().min(1, 'Nama mata pelajaran wajib diisi'),
+  kode: z.string().min(1, 'Kode wajib diisi'),
+  deskripsi: z.string().optional()
+})
+
+type MataPelajaranSchema = z.output<typeof schema>
+
+const form = reactive<Partial<MataPelajaranSchema>>({
   id: '',
   nama: '',
   kode: '',
@@ -207,48 +217,42 @@ async function fetchMataPelajaran() {
 
 function openCreateModal() {
   isEditing.value = false
-  form.value = {
-    id: '',
-    nama: '',
-    kode: '',
-    deskripsi: ''
-  }
+  form.id = ''
+  form.nama = ''
+  form.kode = ''
+  form.deskripsi = ''
   isModalOpen.value = true
 }
 
 function handleEdit(mp: MataPelajaran) {
   isEditing.value = true
-  form.value = {
-    id: mp.id,
-    nama: mp.nama,
-    kode: mp.kode,
-    deskripsi: mp.deskripsi || ''
-  }
+  form.id = mp.id
+  form.nama = mp.nama
+  form.kode = mp.kode
+  form.deskripsi = mp.deskripsi || ''
   isModalOpen.value = true
 }
 
 function closeModal() {
   isModalOpen.value = false
-  form.value = {
-    id: '',
-    nama: '',
-    kode: '',
-    deskripsi: ''
-  }
+  form.id = ''
+  form.nama = ''
+  form.kode = ''
+  form.deskripsi = ''
 }
 
 async function onSubmit() {
   isSubmitting.value = true
   try {
     const payload = {
-      nama: form.value.nama,
-      kode: form.value.kode,
-      deskripsi: form.value.deskripsi || undefined
+      nama: form.nama || '',
+      kode: form.kode || '',
+      deskripsi: form.deskripsi || undefined
     }
 
     let response
     if (isEditing.value) {
-      response = await updateMataPelajaran(form.value.id, payload)
+      response = await updateMataPelajaran(form.id || '', payload)
     } else {
       response = await createMataPelajaran(payload)
     }

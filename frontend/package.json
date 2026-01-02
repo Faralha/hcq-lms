@@ -27,6 +27,7 @@
     "zod": "^4.1.12"
   },
   "devDependencies": {
+    "@iconify-json/lucide": "^1.2.82",
     "husky": "^9.1.7",
     "terser": "^5.44.1"
   }

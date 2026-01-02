@@ -40,7 +40,8 @@
     <!-- Menu Section -->
     <MenuSection title="Menu" :items="menuItems" />
 
-
+    <!-- List Kelas -->
+    <PengajarDaftarKelasList />
   </div>
 </template>
 
@@ -58,8 +59,6 @@ const toast = useToast()
 
 // Composables for fetching data
 const { getAllSemesters } = useSemesterApi()
-const { getAllKelas } = useKelasApi()
-const { getAllUsers } = useUserApi()
 const { getAllMataPelajaran } = useMataPelajaranApi()
 
 // Dashboard stats
@@ -81,7 +80,6 @@ async function fetchDashboardStats() {
     const subjects = subjectsRes.status === 200 && subjectsRes.data ? subjectsRes.data : []
 
     // Find active and upcoming semester
-    const activeSemester = semesters.find(s => s.status === 'AKTIF')
     const upcomingSemester = semesters.find(s => s.status === 'MENDATANG')
 
     stats.value = {
@@ -120,7 +118,7 @@ const menuItems: MenuItem[] = [
     to: '/admin/mata-pelajaran'
   },
   {
-    label: 'Enrollment',
+    label: 'Kelas',
     description: 'Atur Kelas',
     icon: 'i-lucide-calendar-plus',
     to: '/admin/kelas'
@@ -139,13 +137,13 @@ const menuItems: MenuItem[] = [
   },
   {
     label: 'Announcements',
-    description: 'Manage Announcements',
+    description: 'Atur Pengunguman',
     icon: 'i-lucide-megaphone',
     to: '/admin/announcements'
   },
   {
     label: 'Rapor',
-    description: 'Manage Rapor',
+    description: 'Atur Rapor',
     icon: 'i-lucide-file-text',
     to: '/admin/rapor'
   },
@@ -165,6 +163,7 @@ const updateClock = () => {
 
 // Update clock setiap detik
 onMounted(() => {
+  fetchDashboardStats()
   updateClock() // Set initial value
   const interval = setInterval(updateClock, 1000)
   // Cleanup interval saat component unmounted

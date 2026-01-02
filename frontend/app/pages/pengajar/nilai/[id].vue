@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
+import * as z from 'zod'
 import type { TableColumn } from '@nuxt/ui'
 import type { NilaiByKelas, CreateKomponenRequest, EntryNilaiRequest, UpdateNilaiRequest } from '~/composables/useNilaiApi'
-import type { NilaiKomponen, User, Kelas, Nilai } from '~/types/entities'
+import type { NilaiKomponen, User, Kelas, Nilai, AcademicRemark } from '~/types/entities'
+import type { CreateAcademicRemarkRequest, UpdateAcademicRemarkRequest } from '~/composables/useAcademicRemarkApi'
 
 // Extended interface for komponen with nilai array from API
 interface KomponenWithNilai extends NilaiKomponen {
@@ -21,37 +23,78 @@ const kelasId = route.params.id as string
 const UButton = resolveComponent('UButton')
 const UDropdownMenu = resolveComponent('UDropdownMenu')
 const UInput = resolveComponent('UInput')
+const UPopover = resolveComponent('UPopover')
 
 // API Composables
 const { getNilaiByKelas, createKomponen, entryNilai, updateNilai } = useNilaiApi()
 const { getKelasById } = useKelasApi()
+const { getAcademicRemarksByKelas, createAcademicRemark, updateAcademicRemark } = useAcademicRemarkApi()
+const { getAllSemesters } = useSemesterApi()
 
 // State
 const loading = ref(false)
 const nilaiData = ref<KomponenWithNilai[]>([])
 const kelasData = ref<Kelas | null>(null)
+const remarksData = ref<AcademicRemark[]>([])
+const semesters = ref<any[]>([])
+const activeSemester = ref<any | null>(null)
 
 // Modal states
 const isCreateKomponenModalOpen = ref(false)
 const isEditNilaiModalOpen = ref(false)
+const isEditRemarkModalOpen = ref(false)
+
+// Validation schemas
+const komponenSchema = z.object({
+  kelasId: z.string(),
+  nama: z.string().min(1, 'Nama komponen wajib diisi'),
+  bobot: z.number().min(1, 'Bobot minimal 1%').max(100, 'Bobot maksimal 100%')
+})
+
+type KomponenSchema = z.output<typeof komponenSchema>
+
+const nilaiSchema = z.object({
+  nilaiId: z.string().optional(),
+  komponenId: z.string(),
+  pelajarId: z.string(),
+  nilai: z.number().min(0, 'Nilai minimal 0').max(100, 'Nilai maksimal 100'),
+  isNew: z.boolean()
+})
+
+type NilaiSchema = z.output<typeof nilaiSchema>
+
+const remarkSchema = z.object({
+  remarkId: z.string().optional(),
+  userId: z.string(),
+  kelasId: z.string(),
+  semesterId: z.string(),
+  catatan: z.string().min(1, 'Catatan wajib diisi'),
+  isNew: z.boolean()
+})
+
+type RemarkSchema = z.output<typeof remarkSchema>
 
 // Forms
-const createKomponenForm = ref<CreateKomponenRequest>({
+const createKomponenForm = reactive<KomponenSchema>({
   kelasId,
   nama: '',
   bobot: 0
 })
 
-const editNilaiForm = ref<{
-  nilaiId?: string
-  komponenId: string
-  pelajarId: string
-  nilai: number
-  isNew: boolean
-}>({
+const editNilaiForm = reactive<NilaiSchema>({
+  nilaiId: undefined,
   komponenId: '',
   pelajarId: '',
   nilai: 0,
+  isNew: true
+})
+
+const editRemarkForm = reactive<RemarkSchema>({
+  remarkId: undefined,
+  userId: '',
+  kelasId,
+  semesterId: '',
+  catatan: '',
   isNew: true
 })
 
@@ -89,9 +132,13 @@ const pelajarListWithNilai = computed(() => {
       }
     })
 
+    // Find academic remark for this student
+    const remark = remarksData.value.find(r => r.userId === pelajarId)
+
     return {
       user: enrollment.user,
-      nilaiList
+      nilaiList,
+      remark
     }
   })
 
@@ -147,6 +194,42 @@ const columns = computed<TableColumn<any>[]>(() => {
     })
   }
 
+  // Academic Remark column
+  baseColumns.push({
+    id: 'remark',
+    header: () => h('div', { class: 'text-center' }, 'Catatan Akademik'),
+    cell: ({ row }) => {
+      const remark = row.original.remark
+      const hasCatatan = remark?.catatan && remark.catatan !== '-'
+
+      if (!hasCatatan) {
+        return h('div', { class: 'text-center text-muted text-sm' }, '-')
+      }
+
+      return h('div', { class: 'flex justify-center' },
+        h(UPopover, {}, {
+          default: () => h(UButton, {
+            icon: 'i-lucide-eye',
+            label: 'Lihat',
+            size: 'md',
+            color: 'secondary',
+            variant: 'solid'
+          }),
+          content: () => h('div', { class: 'p-4 max-w-md' }, [
+            h('div', { class: 'font-semibold text-sm mb-2 text-highlighted' }, 'Catatan Akademik'),
+            h('p', { class: 'text-sm text-muted whitespace-pre-wrap' }, remark.catatan)
+          ])
+        })
+      )
+    },
+    meta: {
+      class: {
+        th: 'text-center',
+        td: 'text-center min-w-[200px]'
+      }
+    }
+  })
+
   // Actions column
   baseColumns.push({
     id: 'actions',
@@ -157,7 +240,7 @@ const columns = computed<TableColumn<any>[]>(() => {
         return h('div', { class: 'flex justify-end' }, '-')
       }
 
-      const items = nilaiData.value.map((komponen: KomponenWithNilai) => {
+      const nilaiItems = nilaiData.value.map((komponen: KomponenWithNilai) => {
         const nilaiEntry = row.original.nilaiList.find((n: any) => n.komponenId === komponen.id)
         return {
           label: `Edit ${komponen.nama}`,
@@ -166,8 +249,16 @@ const columns = computed<TableColumn<any>[]>(() => {
         }
       })
 
+      const remarkItem = {
+        label: row.original.remark ? 'Edit Catatan Akademik' : 'Tambah Catatan Akademik',
+        icon: 'i-lucide-message-square-text',
+        onSelect: () => openEditRemarkModal(row.original.user, row.original.remark)
+      }
+
+      const items = [nilaiItems, [remarkItem]]
+
       return h('div', { class: 'flex justify-end' },
-        h(UDropdownMenu, { items: [items] }, () =>
+        h(UDropdownMenu, { items }, () =>
           h(UButton, {
             icon: 'i-lucide-more-vertical',
             color: 'neutral',
@@ -225,10 +316,43 @@ async function fetchNilaiData() {
   }
 }
 
+async function fetchRemarksData() {
+  try {
+    const response = await getAcademicRemarksByKelas(kelasId)
+    console.log('Remarks API Response:', response)
+    if (response.status === 200 && response.data) {
+      remarksData.value = response.data
+      console.log('Remarks Data:', remarksData.value)
+    }
+  } catch (error) {
+    console.error('Failed to fetch remarks data:', error)
+    useToast().add({
+      title: 'Error',
+      description: 'Gagal memuat data catatan akademik',
+      color: 'error'
+    })
+  }
+}
+
+async function fetchSemesters() {
+  try {
+    const response = await getAllSemesters()
+    if (response.status === 200 && response.data) {
+      semesters.value = response.data
+      // Set semester from kelas data (kelas is tied to a semester)
+      if (kelasData.value?.semesterId) {
+        editRemarkForm.semesterId = kelasData.value.semesterId
+      }
+    }
+  } catch (error) {
+    console.error('Failed to fetch semesters:', error)
+  }
+}
+
 async function fetchAllData() {
   loading.value = true
   try {
-    await Promise.all([fetchKelasData(), fetchNilaiData()])
+    await Promise.all([fetchKelasData(), fetchNilaiData(), fetchRemarksData(), fetchSemesters()])
   } finally {
     loading.value = false
   }
@@ -238,7 +362,7 @@ async function fetchAllData() {
 async function handleCreateKomponen() {
   loading.value = true
   try {
-    const response = await createKomponen(createKomponenForm.value)
+    const response = await createKomponen(createKomponenForm)
     if (response.status !== 201 && response.status !== 200) {
       throw new Error('Failed to create komponen')
     }
@@ -270,22 +394,22 @@ async function handleSubmitNilai() {
   try {
     let response
 
-    if (editNilaiForm.value.isNew) {
+    if (editNilaiForm.isNew) {
       // Entry nilai baru
       const entryData: EntryNilaiRequest = {
-        komponenId: editNilaiForm.value.komponenId,
-        pelajarId: editNilaiForm.value.pelajarId,
-        nilai: editNilaiForm.value.nilai
+        komponenId: editNilaiForm.komponenId,
+        pelajarId: editNilaiForm.pelajarId,
+        nilai: editNilaiForm.nilai
       }
       response = await entryNilai(entryData)
     } else {
       // Update nilai existing
-      if (!editNilaiForm.value.nilaiId) throw new Error('Nilai ID is required for update')
+      if (!editNilaiForm.nilaiId) throw new Error('Nilai ID is required for update')
 
       const updateData: UpdateNilaiRequest = {
-        nilai: editNilaiForm.value.nilai
+        nilai: editNilaiForm.nilai
       }
-      response = await updateNilai(editNilaiForm.value.nilaiId, updateData)
+      response = await updateNilai(editNilaiForm.nilaiId, updateData)
     }
 
     if (response.status !== 200 && response.status !== 201) {
@@ -294,7 +418,7 @@ async function handleSubmitNilai() {
 
     useToast().add({
       title: 'Success',
-      description: editNilaiForm.value.isNew ? 'Nilai berhasil diinput' : 'Nilai berhasil diupdate',
+      description: editNilaiForm.isNew ? 'Nilai berhasil diinput' : 'Nilai berhasil diupdate',
       color: 'success'
     })
 
@@ -312,6 +436,55 @@ async function handleSubmitNilai() {
   }
 }
 
+// Handle remark submission
+async function handleSubmitRemark() {
+  loading.value = true
+  try {
+    let response
+
+    if (editRemarkForm.isNew) {
+      // Create new remark
+      const createData: CreateAcademicRemarkRequest = {
+        userId: editRemarkForm.userId,
+        kelasId: editRemarkForm.kelasId,
+        semesterId: editRemarkForm.semesterId,
+        catatan: editRemarkForm.catatan
+      }
+      response = await createAcademicRemark(createData)
+    } else {
+      // Update existing remark
+      if (!editRemarkForm.remarkId) throw new Error('Remark ID is required for update')
+
+      const updateData: UpdateAcademicRemarkRequest = {
+        catatan: editRemarkForm.catatan
+      }
+      response = await updateAcademicRemark(editRemarkForm.remarkId, updateData)
+    }
+
+    if (response.status !== 200 && response.status !== 201) {
+      throw new Error('Failed to submit remark')
+    }
+
+    useToast().add({
+      title: 'Success',
+      description: editRemarkForm.isNew ? 'Catatan akademik berhasil ditambahkan' : 'Catatan akademik berhasil diupdate',
+      color: 'success'
+    })
+
+    isEditRemarkModalOpen.value = false
+    await fetchAllData()
+  } catch (error) {
+    console.error('Failed to submit remark:', error)
+    useToast().add({
+      title: 'Error',
+      description: 'Gagal menyimpan catatan akademik',
+      color: 'error'
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
 // Modal handlers
 function openCreateKomponenModal() {
   resetCreateKomponenForm()
@@ -319,22 +492,28 @@ function openCreateKomponenModal() {
 }
 
 function openEditNilaiModal(user: User, komponen: NilaiKomponen, nilaiEntry?: any) {
-  editNilaiForm.value = {
-    nilaiId: nilaiEntry?.id,
-    komponenId: komponen.id,
-    pelajarId: user.id,
-    nilai: nilaiEntry?.nilai ?? 0,
-    isNew: !nilaiEntry
-  }
+  editNilaiForm.nilaiId = nilaiEntry?.id
+  editNilaiForm.komponenId = komponen.id
+  editNilaiForm.pelajarId = user.id
+  editNilaiForm.nilai = nilaiEntry?.nilai ?? 0
+  editNilaiForm.isNew = !nilaiEntry
   isEditNilaiModalOpen.value = true
 }
 
+function openEditRemarkModal(user: User, remark?: AcademicRemark) {
+  editRemarkForm.remarkId = remark?.id
+  editRemarkForm.userId = user.id
+  editRemarkForm.kelasId = kelasId
+  editRemarkForm.semesterId = remark?.semesterId || kelasData.value?.semesterId || ''
+  editRemarkForm.catatan = remark?.catatan || ''
+  editRemarkForm.isNew = !remark
+  isEditRemarkModalOpen.value = true
+}
+
 function resetCreateKomponenForm() {
-  createKomponenForm.value = {
-    kelasId,
-    nama: '',
-    bobot: 0
-  }
+  createKomponenForm.kelasId = kelasId
+  createKomponenForm.nama = ''
+  createKomponenForm.bobot = 0
 }
 
 // Initialize
@@ -380,7 +559,8 @@ onMounted(() => {
     </div>
 
     <!-- Table -->
-    <UTable :data="pelajarListWithNilai" :columns="columns" :loading="loading" class="w-full">
+    <UTable :data="pelajarListWithNilai" :columns="columns" :loading="loading"
+      class="w-full border border-default rounded-lg">
       <template #empty>
         <div class="text-center py-8">
           <UIcon name="i-lucide-users" class="size-12 mx-auto text-muted mb-3" />
@@ -397,19 +577,20 @@ onMounted(() => {
             <h3 class="text-lg font-semibold">Tambah Komponen Penilaian</h3>
           </template>
 
-          <div class="space-y-4">
-            <UFormField label="Nama Komponen" required class="w-full">
-              <UInput v-model="createKomponenForm.nama" placeholder="Contoh: UTS, UAS, Kuis 1" class="w-full" />
+          <UForm :schema="komponenSchema" :state="createKomponenForm" @submit="handleCreateKomponen"
+            @keydown.ctrl.enter="handleCreateKomponen" @keydown.meta.enter="handleCreateKomponen" class="space-y-4">
+            <UFormField label="Nama Komponen" name="nama" required>
+              <UInput v-model="createKomponenForm.nama" placeholder="Contoh: UTS, UAS, Kuis 1" class="w-full"
+                @keydown.enter="handleCreateKomponen" />
             </UFormField>
 
-            <UFormField label="Bobot (%)" required class="w-full">
+            <UFormField label="Bobot (%)" name="bobot" required>
               <UInput v-model.number="createKomponenForm.bobot" type="number" placeholder="Contoh: 30" min="0" max="100"
-                class="w-full" />
+                class="w-full" @keydown.enter="handleCreateKomponen" />
             </UFormField>
 
             <div class="w-full flex flex-col items-center gap-3 pt-4">
-              <UButton class="w-full justify-center" :loading="loading"
-                :disabled="!createKomponenForm.nama || !createKomponenForm.bobot" @click="handleCreateKomponen">
+              <UButton class="w-full justify-center" type="submit" :loading="loading">
                 Simpan
               </UButton>
               <UButton class="w-full justify-center" color="neutral" variant="outline"
@@ -417,7 +598,7 @@ onMounted(() => {
                 Batal
               </UButton>
             </div>
-          </div>
+          </UForm>
         </UCard>
       </template>
     </UModal>
@@ -432,14 +613,15 @@ onMounted(() => {
             </h3>
           </template>
 
-          <div class="space-y-4">
-            <UFormField label="Nilai" required class="w-full">
+          <UForm :schema="nilaiSchema" :state="editNilaiForm" @submit="handleSubmitNilai"
+            @keydown.ctrl.enter="handleSubmitNilai" @keydown.meta.enter="handleSubmitNilai" class="space-y-4">
+            <UFormField label="Nilai" name="nilai" required>
               <UInput v-model.number="editNilaiForm.nilai" type="number" placeholder="Masukkan nilai (0-100)" min="0"
-                max="100" step="0.01" class="w-full" />
+                max="100" step="0.01" class="w-full" @keydown.enter="handleSubmitNilai" />
             </UFormField>
 
             <div class="w-full flex flex-col items-center gap-3 pt-4">
-              <UButton class="w-full justify-center" :loading="loading" @click="handleSubmitNilai">
+              <UButton class="w-full justify-center" type="submit" :loading="loading">
                 {{ editNilaiForm.isNew ? 'Simpan' : 'Update' }}
               </UButton>
               <UButton class="w-full justify-center" color="neutral" variant="outline"
@@ -447,7 +629,44 @@ onMounted(() => {
                 Batal
               </UButton>
             </div>
-          </div>
+          </UForm>
+        </UCard>
+      </template>
+    </UModal>
+
+    <!-- Edit Academic Remark Modal -->
+    <UModal v-model:open="isEditRemarkModalOpen">
+      <template #content>
+        <UCard>
+          <template #header>
+            <h3 class="text-lg font-semibold">
+              {{ editRemarkForm.isNew ? 'Tambah' : 'Edit' }} Catatan Akademik
+            </h3>
+          </template>
+
+          <UForm :schema="remarkSchema" :state="editRemarkForm" @submit="handleSubmitRemark"
+            @keydown.ctrl.enter="handleSubmitRemark" @keydown.meta.enter="handleSubmitRemark" class="space-y-4">
+            <UFormField label="Semester" name="semesterId" required>
+              <USelectMenu v-model="editRemarkForm.semesterId" :items="semesters" label-key="nama" value-key="id"
+                placeholder="Pilih semester" disabled class="w-full" />
+            </UFormField>
+
+            <UFormField label="Catatan" name="catatan" required>
+              <UTextarea v-model="editRemarkForm.catatan"
+                placeholder="Masukkan catatan akademik untuk siswa ini (Ctrl+Enter untuk submit)" :rows="5"
+                class="w-full" />
+            </UFormField>
+
+            <div class="w-full flex flex-col items-center gap-3 pt-4">
+              <UButton class="w-full justify-center" type="submit" :loading="loading">
+                {{ editRemarkForm.isNew ? 'Simpan' : 'Update' }}
+              </UButton>
+              <UButton class="w-full justify-center" color="neutral" variant="outline"
+                @click="isEditRemarkModalOpen = false">
+                Batal
+              </UButton>
+            </div>
+          </UForm>
         </UCard>
       </template>
     </UModal>
