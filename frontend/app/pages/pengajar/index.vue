@@ -49,12 +49,12 @@ const menuItems: MenuItem[] = [
     icon: 'i-lucide-clipboard-check',
     to: '/pengajar/nilai'
   },
-  {
-    label: 'Jadwal Mengajar',
-    description: 'Lihat jadwal mengajar Anda',
-    icon: 'i-lucide-calendar',
-    to: '/pengajar/jadwal'
-  },
+  // {
+  //   label: 'Jadwal Mengajar',
+  //   description: 'Lihat jadwal mengajar Anda',
+  //   icon: 'i-lucide-calendar',
+  //   to: '/pengajar/jadwal'
+  // },
   {
     label: 'Gaji',
     description: 'Riwayat gaji dan slip gaji',

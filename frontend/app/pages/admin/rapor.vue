@@ -133,7 +133,7 @@ const toast = useToast()
 const { getAllSemesters } = useSemesterApi()
 const { getAllKelas } = useKelasApi()
 const { getAllUsers } = useUserApi()
-const { generateRapor, getAllRaporFiles, getRaporStatus, downloadRapor } = useRaporApi()
+const { generateRapor, getAllRaporFiles, getRaporStatus, downloadRapor, deleteRaporFile, retryRaporGeneration } = useRaporApi()
 
 // State
 const stats = ref({
@@ -266,6 +266,18 @@ const raporColumns: TableColumn<RaporFile>[] = [
           onSelect: () => handleRetryGenerate(row.original)
         })
       }
+
+      items.push({
+        label: 'Generate Ulang',
+        icon: 'i-lucide-rotate-cw',
+        onSelect: () => handleRegenerateRapor(row.original.id)
+      })
+
+      items.push({
+        label: 'Delete',
+        icon: 'i-lucide-trash-2',
+        onSelect: () => handleDeleteRapor(row.original.id)
+      })
 
       return h('div', { class: 'flex justify-end' },
         h(UDropdownMenu, { items }, () =>
@@ -467,7 +479,7 @@ async function handleGenerateSpecificRapor() {
     const response = await generateRapor(selectedStudentId.value, stats.value.activeSemesterId)
     console.log('[Rapor] handleGenerateSpecificRapor - generateRapor response:', response)
 
-    if (response.status == 200) {
+    if (response.status >= 200 && response.status < 300) {
       toast.add({
         title: 'Rapor berhasil di-generate',
         description: response.data?.message || 'Rapor sedang diproses',
@@ -571,7 +583,7 @@ async function handleRetryGenerate(rapor: RaporFile) {
     const response = await generateRapor(rapor.studentId, rapor.semesterId)
     console.log('[Rapor] handleRetryGenerate - generateRapor response:', response)
 
-    if (response.status === 200) {
+    if (response.status === 200 || response.status === 201) {
       toast.add({
         title: 'Retry berhasil',
         description: 'Rapor sedang diproses ulang',
@@ -586,6 +598,58 @@ async function handleRetryGenerate(rapor: RaporFile) {
     toast.add({
       title: 'Error retry generate',
       description: formatErrorMessage(error, 'Failed to retry generation'),
+      color: 'error',
+      icon: 'i-lucide-alert-circle'
+    })
+  }
+}
+
+async function handleDeleteRapor(raporFileId: string) {
+  try {
+    const response = await deleteRaporFile(raporFileId)
+    console.log('[Rapor] handleDeleteRapor - deleteRaporFile response:', response)
+
+    if (response.status === 200) {
+      toast.add({
+        title: 'Rapor berhasil dihapus',
+        description: 'Data rapor telah dihapus dari sistem',
+        color: 'success',
+        icon: 'i-lucide-check-circle'
+      })
+
+      await fetchStats()
+    }
+  } catch (error: any) {
+    console.error('[Rapor] Error deleting rapor:', error)
+    toast.add({
+      title: 'Error delete rapor',
+      description: formatErrorMessage(error, 'Failed to delete rapor'),
+      color: 'error',
+      icon: 'i-lucide-alert-circle'
+    })
+  }
+}
+
+async function handleRegenerateRapor(raporFileId: string) {
+  try {
+    const response = await retryRaporGeneration(raporFileId)
+    console.log('[Rapor] handleRegenerateRapor - retryRaporGeneration response:', response)
+
+    if (response.status >= 200 && response.status < 300) {
+      toast.add({
+        title: 'Generate ulang berhasil',
+        description: 'Rapor sedang diproses ulang',
+        color: 'success',
+        icon: 'i-lucide-check-circle'
+      })
+
+      await fetchStats()
+    }
+  } catch (error: any) {
+    console.error('[Rapor] Error regenerating rapor:', error)
+    toast.add({
+      title: 'Error generate ulang rapor',
+      description: formatErrorMessage(error, 'Failed to regenerate rapor'),
       color: 'error',
       icon: 'i-lucide-alert-circle'
     })

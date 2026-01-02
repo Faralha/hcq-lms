@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
+import * as z from 'zod'
 import type { TableColumn } from '@nuxt/ui'
 import type { NilaiByKelas, CreateKomponenRequest, EntryNilaiRequest, UpdateNilaiRequest } from '~/composables/useNilaiApi'
 import type { NilaiKomponen, User, Kelas, Nilai } from '~/types/entities'
@@ -35,20 +36,34 @@ const kelasData = ref<Kelas | null>(null)
 const isCreateKomponenModalOpen = ref(false)
 const isEditNilaiModalOpen = ref(false)
 
+// Validation schemas
+const komponenSchema = z.object({
+  kelasId: z.string(),
+  nama: z.string().min(1, 'Nama komponen wajib diisi'),
+  bobot: z.number().min(1, 'Bobot minimal 1%').max(100, 'Bobot maksimal 100%')
+})
+
+type KomponenSchema = z.output<typeof komponenSchema>
+
+const nilaiSchema = z.object({
+  nilaiId: z.string().optional(),
+  komponenId: z.string(),
+  pelajarId: z.string(),
+  nilai: z.number().min(0, 'Nilai minimal 0').max(100, 'Nilai maksimal 100'),
+  isNew: z.boolean()
+})
+
+type NilaiSchema = z.output<typeof nilaiSchema>
+
 // Forms
-const createKomponenForm = ref<CreateKomponenRequest>({
+const createKomponenForm = reactive<KomponenSchema>({
   kelasId,
   nama: '',
   bobot: 0
 })
 
-const editNilaiForm = ref<{
-  nilaiId?: string
-  komponenId: string
-  pelajarId: string
-  nilai: number
-  isNew: boolean
-}>({
+const editNilaiForm = reactive<NilaiSchema>({
+  nilaiId: undefined,
   komponenId: '',
   pelajarId: '',
   nilai: 0,
@@ -238,7 +253,7 @@ async function fetchAllData() {
 async function handleCreateKomponen() {
   loading.value = true
   try {
-    const response = await createKomponen(createKomponenForm.value)
+    const response = await createKomponen(createKomponenForm)
     if (response.status !== 201 && response.status !== 200) {
       throw new Error('Failed to create komponen')
     }
@@ -270,22 +285,22 @@ async function handleSubmitNilai() {
   try {
     let response
 
-    if (editNilaiForm.value.isNew) {
+    if (editNilaiForm.isNew) {
       // Entry nilai baru
       const entryData: EntryNilaiRequest = {
-        komponenId: editNilaiForm.value.komponenId,
-        pelajarId: editNilaiForm.value.pelajarId,
-        nilai: editNilaiForm.value.nilai
+        komponenId: editNilaiForm.komponenId,
+        pelajarId: editNilaiForm.pelajarId,
+        nilai: editNilaiForm.nilai
       }
       response = await entryNilai(entryData)
     } else {
       // Update nilai existing
-      if (!editNilaiForm.value.nilaiId) throw new Error('Nilai ID is required for update')
+      if (!editNilaiForm.nilaiId) throw new Error('Nilai ID is required for update')
 
       const updateData: UpdateNilaiRequest = {
-        nilai: editNilaiForm.value.nilai
+        nilai: editNilaiForm.nilai
       }
-      response = await updateNilai(editNilaiForm.value.nilaiId, updateData)
+      response = await updateNilai(editNilaiForm.nilaiId, updateData)
     }
 
     if (response.status !== 200 && response.status !== 201) {
@@ -294,7 +309,7 @@ async function handleSubmitNilai() {
 
     useToast().add({
       title: 'Success',
-      description: editNilaiForm.value.isNew ? 'Nilai berhasil diinput' : 'Nilai berhasil diupdate',
+      description: editNilaiForm.isNew ? 'Nilai berhasil diinput' : 'Nilai berhasil diupdate',
       color: 'success'
     })
 
@@ -319,22 +334,18 @@ function openCreateKomponenModal() {
 }
 
 function openEditNilaiModal(user: User, komponen: NilaiKomponen, nilaiEntry?: any) {
-  editNilaiForm.value = {
-    nilaiId: nilaiEntry?.id,
-    komponenId: komponen.id,
-    pelajarId: user.id,
-    nilai: nilaiEntry?.nilai ?? 0,
-    isNew: !nilaiEntry
-  }
+  editNilaiForm.nilaiId = nilaiEntry?.id
+  editNilaiForm.komponenId = komponen.id
+  editNilaiForm.pelajarId = user.id
+  editNilaiForm.nilai = nilaiEntry?.nilai ?? 0
+  editNilaiForm.isNew = !nilaiEntry
   isEditNilaiModalOpen.value = true
 }
 
 function resetCreateKomponenForm() {
-  createKomponenForm.value = {
-    kelasId,
-    nama: '',
-    bobot: 0
-  }
+  createKomponenForm.kelasId = kelasId
+  createKomponenForm.nama = ''
+  createKomponenForm.bobot = 0
 }
 
 // Initialize
@@ -380,7 +391,8 @@ onMounted(() => {
     </div>
 
     <!-- Table -->
-    <UTable :data="pelajarListWithNilai" :columns="columns" :loading="loading" class="w-full">
+    <UTable :data="pelajarListWithNilai" :columns="columns" :loading="loading"
+      class="w-full border border-default rounded-lg">
       <template #empty>
         <div class="text-center py-8">
           <UIcon name="i-lucide-users" class="size-12 mx-auto text-muted mb-3" />
@@ -397,19 +409,18 @@ onMounted(() => {
             <h3 class="text-lg font-semibold">Tambah Komponen Penilaian</h3>
           </template>
 
-          <div class="space-y-4">
-            <UFormField label="Nama Komponen" required class="w-full">
+          <UForm :schema="komponenSchema" :state="createKomponenForm" @submit="handleCreateKomponen" class="space-y-4">
+            <UFormField label="Nama Komponen" name="nama" required>
               <UInput v-model="createKomponenForm.nama" placeholder="Contoh: UTS, UAS, Kuis 1" class="w-full" />
             </UFormField>
 
-            <UFormField label="Bobot (%)" required class="w-full">
+            <UFormField label="Bobot (%)" name="bobot" required>
               <UInput v-model.number="createKomponenForm.bobot" type="number" placeholder="Contoh: 30" min="0" max="100"
                 class="w-full" />
             </UFormField>
 
             <div class="w-full flex flex-col items-center gap-3 pt-4">
-              <UButton class="w-full justify-center" :loading="loading"
-                :disabled="!createKomponenForm.nama || !createKomponenForm.bobot" @click="handleCreateKomponen">
+              <UButton class="w-full justify-center" type="submit" :loading="loading">
                 Simpan
               </UButton>
               <UButton class="w-full justify-center" color="neutral" variant="outline"
@@ -417,7 +428,7 @@ onMounted(() => {
                 Batal
               </UButton>
             </div>
-          </div>
+          </UForm>
         </UCard>
       </template>
     </UModal>
@@ -432,14 +443,14 @@ onMounted(() => {
             </h3>
           </template>
 
-          <div class="space-y-4">
-            <UFormField label="Nilai" required class="w-full">
+          <UForm :schema="nilaiSchema" :state="editNilaiForm" @submit="handleSubmitNilai" class="space-y-4">
+            <UFormField label="Nilai" name="nilai" required>
               <UInput v-model.number="editNilaiForm.nilai" type="number" placeholder="Masukkan nilai (0-100)" min="0"
                 max="100" step="0.01" class="w-full" />
             </UFormField>
 
             <div class="w-full flex flex-col items-center gap-3 pt-4">
-              <UButton class="w-full justify-center" :loading="loading" @click="handleSubmitNilai">
+              <UButton class="w-full justify-center" type="submit" :loading="loading">
                 {{ editNilaiForm.isNew ? 'Simpan' : 'Update' }}
               </UButton>
               <UButton class="w-full justify-center" color="neutral" variant="outline"
@@ -447,7 +458,7 @@ onMounted(() => {
                 Batal
               </UButton>
             </div>
-          </div>
+          </UForm>
         </UCard>
       </template>
     </UModal>

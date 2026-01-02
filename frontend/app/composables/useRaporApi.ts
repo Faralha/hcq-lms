@@ -100,6 +100,22 @@ export const useRaporApi = () => {
     return api.get("rapor/all");
   };
 
+  /**
+   * Delete rapor file (admin only)
+   * DELETE /rapor/:raporFileId
+   */
+  const deleteRaporFile = async (raporFileId: string): Promise<ApiResponse<RaporFile[]>> => {
+    return api.delete(`rapor/${raporFileId}`);
+  }
+
+  /**
+   * Retry/Regenerate rapor (admin only)
+   * POST /rapor/retry/:raporFileId
+   */
+  const retryRaporGeneration = async (raporFileId: string): Promise<ApiResponse<GenerateRaporResponse>> => {
+    return api.post(`rapor/retry/${raporFileId}`);
+  }
+
   return {
     generateRapor,
     getRaporStatus,
@@ -107,5 +123,7 @@ export const useRaporApi = () => {
     getMyRaporFiles,
     getRaporFilesByStudent,
     getAllRaporFiles,
+    deleteRaporFile,
+    retryRaporGeneration,
   };
 };
