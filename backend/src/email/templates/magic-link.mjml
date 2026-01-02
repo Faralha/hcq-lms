@@ -1,0 +1,57 @@
+<mjml>
+  <mj-head>
+    <mj-attributes>
+      <mj-all font-family="Arial, sans-serif" />
+      <mj-text font-size="14px" color="#333333" line-height="1.6" />
+      <mj-button background-color="#2c3e50" border-radius="4px" font-weight="bold" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#f4f4f4">
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-image src="https://hcq.my.id/hcq.png" alt="HCQ" width="120px" />
+      </mj-column>
+    </mj-section>
+
+    <mj-section background-color="#ffffff" border-radius="8px" padding="30px">
+      <mj-column>
+        <mj-text font-size="20px" font-weight="bold" color="#2c3e50">
+          Undangan Bergabung sebagai Pengajar
+        </mj-text>
+
+        <mj-text>
+          Halo <strong>{{recipientName}}</strong>,
+        </mj-text>
+
+        <mj-text>
+          Anda telah diundang untuk bergabung sebagai pengajar di platform HCQ. Klik tombol di bawah ini untuk membuat akun Anda:
+        </mj-text>
+
+        <mj-button href="{{magicLink}}">
+          Buat Akun Pengajar
+        </mj-button>
+
+        <mj-text font-size="12px" color="#666666">
+          Atau salin link berikut di browser Anda:<br />
+          <a href="{{magicLink}}" style="color: #2c3e50; word-break: break-all;">{{magicLink}}</a>
+        </mj-text>
+
+        <mj-text padding="15px" background-color="#fff3cd" container-background-color="#fff3cd">
+          <strong>⏰ Perhatian:</strong> Link undangan ini hanya berlaku selama 7 hari.
+        </mj-text>
+
+        <mj-text font-size="12px" color="#999999">
+          Jika Anda tidak meminta undangan ini, abaikan email ini.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-text align="center" font-size="11px" color="#999999">
+          © 2025 HCQ Platform. Jangan balas email ini.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

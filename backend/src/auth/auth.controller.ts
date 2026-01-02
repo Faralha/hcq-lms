@@ -11,6 +11,8 @@ import {
   Res,
   Req,
   BadRequestException,
+  Param,
+  Delete,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto, RegisterPelajarDto, ChangePasswordDto } from './dto';
@@ -172,5 +174,36 @@ export class AuthController {
     return {
       message: 'Logged out successfully',
     };
+  }
+
+  // ==================== Invitation CRUD Endpoints ====================
+
+  @Get('invitations')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async getInvitations() {
+    return this.authService.getInvitations();
+  }
+
+  @Get('invitations/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async getInvitationById(@Param('id') id: string) {
+    return this.authService.getInvitationById(id);
+  }
+
+  @Delete('invitations/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  async deleteInvitation(@Param('id') id: string) {
+    return this.authService.deleteInvitation(id);
+  }
+
+  @Post('invitations/:id/resend')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @HttpCode(HttpStatus.OK)
+  async resendInvitation(@Param('id') id: string) {
+    return this.authService.resendInvitation(id);
   }
 }
