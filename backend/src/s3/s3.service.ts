@@ -39,6 +39,15 @@ export class S3Service implements OnModuleInit {
       } else {
         this.logger.log(`Bucket '${this.bucketName}' already exists`);
       }
+
+      // Ensure rapor bucket exists
+      const raporBucketExists = await this.minioClient.bucketExists('rapor');
+      if (!raporBucketExists) {
+        await this.minioClient.makeBucket('rapor');
+        this.logger.log(`Bucket 'rapor' created successfully`);
+      } else {
+        this.logger.log(`Bucket 'rapor' already exists`);
+      }
     } catch (error) {
       this.logger.warn(
         `Could not connect to S3/MinIO: ${(error as Error).message}. ` +
@@ -111,6 +120,89 @@ export class S3Service implements OnModuleInit {
   async fileExists(objectName: string): Promise<boolean> {
     try {
       await this.minioClient.statObject(this.bucketName, objectName);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Upload PDF buffer to S3 (used for rapor generation)
+   * @param buffer PDF buffer
+   * @param objectName Object key (path) in bucket
+   * @param bucketName Bucket name (defaults to configured bucket)
+   * @returns Object key (path) of uploaded file
+   */
+  async uploadPdfBuffer(
+    buffer: Buffer,
+    objectName: string,
+    bucketName: string = this.bucketName,
+  ): Promise<string> {
+    await this.minioClient.putObject(
+      bucketName,
+      objectName,
+      buffer,
+      buffer.length,
+      {
+        'Content-Type': 'application/pdf',
+      },
+    );
+
+    this.logger.log(`PDF uploaded: ${objectName} to bucket ${bucketName}`);
+    return objectName;
+  }
+
+  /**
+   * Get file from specific bucket
+   * @param objectName Object key (path) in bucket
+   * @param bucketName Bucket name
+   * @returns Readable stream
+   */
+  async getFileFromBucket(
+    objectName: string,
+    bucketName: string,
+  ): Promise<Readable> {
+    return await this.minioClient.getObject(bucketName, objectName);
+  }
+
+  /**
+   * Get file stats from specific bucket
+   * @param objectName Object key (path) in bucket
+   * @param bucketName Bucket name
+   * @returns File stats including size and content type
+   */
+  async getFileStatFromBucket(
+    objectName: string,
+    bucketName: string,
+  ): Promise<Minio.BucketItemStat> {
+    return await this.minioClient.statObject(bucketName, objectName);
+  }
+
+  /**
+   * Delete file from specific bucket
+   * @param objectName Object key (path) in bucket
+   * @param bucketName Bucket name
+   */
+  async deleteFileFromBucket(
+    objectName: string,
+    bucketName: string,
+  ): Promise<void> {
+    await this.minioClient.removeObject(bucketName, objectName);
+    this.logger.log(`File deleted: ${objectName} from bucket ${bucketName}`);
+  }
+
+  /**
+   * Check if file exists in specific bucket
+   * @param objectName Object key (path) in bucket
+   * @param bucketName Bucket name
+   * @returns Boolean indicating if file exists
+   */
+  async fileExistsInBucket(
+    objectName: string,
+    bucketName: string,
+  ): Promise<boolean> {
+    try {
+      await this.minioClient.statObject(bucketName, objectName);
       return true;
     } catch {
       return false;

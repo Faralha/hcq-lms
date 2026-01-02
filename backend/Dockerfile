@@ -1,6 +1,6 @@
 # Multi-stage build for NestJS with pnpm
-# Base image with Node.js 24 (Debian-based for Puppeteer support)
-FROM node:24-bookworm-slim AS base
+# Base image with Node.js 24 Alpine (lightweight)
+FROM node:24-alpine AS base
 
 # Install pnpm globally
 RUN npm install -g pnpm
@@ -42,48 +42,10 @@ RUN pnpm run build
 # ===================================
 # Production stage
 # ===================================
-FROM node:24-bookworm-slim AS production
+FROM node:24-alpine AS production
 
-# Install Chrome dependencies for Puppeteer
-RUN apt-get update && apt-get install -y \
-    wget \
-    ca-certificates \
-    fonts-liberation \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libc6 \
-    libcairo2 \
-    libcups2 \
-    libdbus-1-3 \
-    libexpat1 \
-    libfontconfig1 \
-    libgbm1 \
-    libgcc1 \
-    libglib2.0-0 \
-    libgtk-3-0 \
-    libnspr4 \
-    libnss3 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libstdc++6 \
-    libx11-6 \
-    libx11-xcb1 \
-    libxcb1 \
-    libxcomposite1 \
-    libxcursor1 \
-    libxdamage1 \
-    libxext6 \
-    libxfixes3 \
-    libxi6 \
-    libxrandr2 \
-    libxrender1 \
-    libxss1 \
-    libxtst6 \
-    lsb-release \
-    xdg-utils \
-    nano \
-    && rm -rf /var/lib/apt/lists/*
+# Install extra tools (nano for file editing/debugging)
+RUN apk add --no-cache nano
 
 # Install pnpm globally
 RUN npm install -g pnpm
@@ -111,9 +73,6 @@ ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db?schema=public"
 
 # Generate Prisma Client for production
 RUN pnpm prisma:generate
-
-# Install Chrome for Puppeteer
-RUN pnpm puppeteer:install
 
 # Copy built application from build stage
 COPY --from=build /app/dist ./dist

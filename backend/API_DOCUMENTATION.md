@@ -2070,6 +2070,128 @@ Authorization: Bearer <admin-token>
 
 ---
 
+#### Delete Rapor File (Admin Only)
+
+Delete a rapor file from the database and disk storage.
+
+```http
+POST /rapor/delete/:raporFileId
+Authorization: Bearer <admin-token>
+```
+
+**URL Parameters:**
+
+- `raporFileId` (string, required): UUID of the rapor file to delete
+
+**Response (200 OK):**
+
+```json
+{
+  "message": "Rapor file deleted successfully",
+  "raporFileId": "uuid"
+}
+```
+
+**Notes:**
+
+- Deletes the PDF file from disk storage (if exists)
+- Deletes the database record
+- Only ADMIN can delete rapor files
+- Cannot be undone - use retry instead if you want to regenerate
+
+**Error Responses:**
+
+```json
+// 404 - Rapor not found
+{
+  "statusCode": 404,
+  "message": "Rapor file not found",
+  "error": "Not Found"
+}
+```
+
+---
+
+#### Retry/Regenerate Rapor (Admin Only)
+
+Regenerate a rapor file, even if one already exists. Deletes the existing rapor and creates a new generation request.
+
+```http
+POST /rapor/retry/:raporFileId
+Authorization: Bearer <admin-token>
+```
+
+**URL Parameters:**
+
+- `raporFileId` (string, required): UUID of the rapor file to regenerate
+
+**Description:**
+
+- Useful when rapor generation failed
+- Useful when you want to update rapor with latest data (new grades, attendance)
+- Deletes existing rapor file (both database and disk)
+- Creates new generation request with same studentId and semesterId
+- Returns new rapor file ID and queues background job
+
+**Response (200 OK):**
+
+```json
+{
+  "raporFileId": "new-uuid",
+  "status": "PENDING",
+  "message": "PDF generation queued successfully"
+}
+```
+
+**Notes:**
+
+- Automatically deletes old rapor file before regenerating
+- Creates a new rapor file record with new UUID
+- Queues background job for PDF generation
+- Check new status via `/rapor/status/:raporFileId` with the new UUID
+- Only ADMIN can retry rapor generation
+
+**Use Cases:**
+
+- **Failed Generation**: Retry after fixing system issues
+- **Updated Data**: Regenerate with latest grades/attendance
+- **Corrupted File**: Replace damaged PDF
+
+**Error Responses:**
+
+```json
+// 404 - Rapor not found
+{
+  "statusCode": 404,
+  "message": "Rapor file not found",
+  "error": "Not Found"
+}
+```
+
+**Workflow Example:**
+
+```bash
+# 1. Check rapor status
+GET /rapor/status/old-rapor-uuid
+
+# Response: { "status": "FAILED", ... }
+
+# 2. Retry generation
+POST /rapor/retry/old-rapor-uuid
+
+# Response: { "raporFileId": "new-uuid", "status": "PENDING", ... }
+
+# 3. Check new status
+GET /rapor/status/new-uuid
+
+# Response: { "status": "COMPLETED", "fileUrl": "...", ... }
+
+# 4. Download new file
+GET /rapor/download/new-uuid
+```
+
+---
+
 #### Rapor PDF Content
 
 The generated rapor includes:
@@ -2100,21 +2222,27 @@ The generated rapor includes:
 
 ---
 
-#### Rapor File Structure
+#### Rapor File Storage
 
-PDF files are saved in `backend/rapor/` directory, organized by semester:
+PDF files are stored in **MinIO/S3** in the `rapor` bucket, organized by semester:
 
 ```
-backend/
-├── rapor/
-│   ├── Genap_2025_2026/          # Sanitized semester name
-│   │   ├── rapor_student-uuid-1_1703352000000.pdf
-│   │   ├── rapor_student-uuid-2_1703352010000.pdf
-│   │   └── ...
-│   ├── Ganjil_2025_2026/
-│   │   ├── rapor_student-uuid-1_1703352050000.pdf
-│   │   └── ...
+S3 Bucket: rapor
+├── Genap_2025_2026/          # Sanitized semester name
+│   ├── rapor_student-uuid-1_1703352000000.pdf
+│   ├── rapor_student-uuid-2_1703352010000.pdf
+│   └── ...
+├── Ganjil_2025_2026/
+│   ├── rapor_student-uuid-1_1703352050000.pdf
+│   └── ...
 ```
+
+**S3 Configuration:**
+
+- Bucket Name: `rapor` (auto-created on app startup)
+- Object Key Format: `{sanitized_semester_name}/{filename}.pdf`
+- Content-Type: `application/pdf`
+- Storage: MinIO (S3-compatible object storage)
 
 **Filename Sanitization:**
 
@@ -2122,11 +2250,30 @@ backend/
 - Regex: `/[^a-zA-Z0-9-_]/g` replaced with `_`
 - Prevents nested directories from slashes
 
-**Static File Access:**
+**File Access:**
 
-- Files are served at: `GET /rapor/{sanitized_semester_name}/{filename}.pdf`
-- Direct access requires authentication via download endpoint
-- Absolute path: `process.cwd() + '/rapor/' + sanitizedSemesterName`
+- Files are streamed from S3 via: `GET /rapor/download/:raporFileId`
+- Direct S3 access requires authentication via download endpoint
+- Database stores S3 object key (e.g., `Genap_2025_2026/rapor_xxx.pdf`)
+
+**Environment Variables:**
+
+```bash
+S3_ENDPOINT=localhost
+S3_PORT=9000
+S3_USE_SSL=false
+S3_ACCESS_KEY=minioadmin
+S3_SECRET_KEY=minioadmin
+```
+
+**Initialize Rapor Bucket:**
+
+```bash
+# Run initialization script
+npx ts-node src/scripts/init-rapor-bucket.ts
+```
+
+The bucket is also automatically created on application startup if it doesn't exist.
 
 ---
 
@@ -2151,19 +2298,20 @@ backend/
 4. Background worker picks up job (`@Processor('rapor-pdf')`)
 5. Status updated to PROCESSING
 6. Fetch student data (nilai, presensi) from PostgreSQL
-7. Generate PDF using Puppeteer + Handlebars template
-8. Save to `backend/rapor/{sanitized_semester}/rapor_<studentId>_<timestamp>.pdf`
-9. Validate file exists and size > 0
-10. Update status to COMPLETED with fileUrl
-11. Student can download via `GET /rapor/download/:raporFileId`
+7. Generate PDF using Chromiumly (Gotenberg) + Handlebars template
+8. Upload PDF to S3 bucket `rapor` with key `{semester}/{filename}.pdf`
+9. Validate file exists in S3 and size > 0
+10. Update status to COMPLETED with S3 object key
+11. Student can download via `GET /rapor/download/:raporFileId` (streams from S3)
 
 **Technical Details:**
 
-- **PDF Engine**: Puppeteer v24.34.0 with Chrome 143
+- **PDF Engine**: Chromiumly (Gotenberg client) with Chrome-based rendering
 - **Template Engine**: Handlebars v4.7.8
 - **Template Path**: `src/rapor/templates/rapor.hbs`
+- **Storage**: MinIO/S3 bucket `rapor`
 - **Worker Class**: `RaporQueueService` with `@Processor` decorator
-- **Job Data**: `{ raporFileId: string }`
+- **Job Data**: `{ raporFileId: string, studentId: string, semesterId: string }`
 
 **Error Handling:**
 
@@ -2214,6 +2362,8 @@ See [REDIS_QUEUE_SETUP.md](REDIS_QUEUE_SETUP.md) for:
 | **Rapor Generation**    | ADMIN            | -                | -                | -             |
 | **Rapor Download**      | -                | ADMIN/PELAJAR\*  | -                | -             |
 | **Rapor List**          | -                | ADMIN/PELAJAR    | -                | -             |
+| **Rapor Delete**        | -                | -                | -                | ADMIN         |
+| **Rapor Retry**         | ADMIN            | -                | -                | -             |
 
 \*PELAJAR can only download their own rapor
 
