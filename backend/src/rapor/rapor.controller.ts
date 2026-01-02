@@ -2,6 +2,7 @@ import {
   Controller,
   Post,
   Get,
+  Delete,
   Param,
   UseGuards,
   Request,
@@ -13,19 +14,21 @@ import {
   Logger,
 } from '@nestjs/common';
 import { RaporService } from './rapor.service';
+import { S3Service } from '../s3/s3.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards';
 import { Roles } from '../auth/decorators';
 import type { Response } from 'express';
-import { createReadStream, existsSync, statSync } from 'fs';
-import { join } from 'path';
 
 @Controller('rapor')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class RaporController {
   private readonly logger = new Logger(RaporController.name);
 
-  constructor(private readonly raporService: RaporService) {}
+  constructor(
+    private readonly raporService: RaporService,
+    private readonly s3Service: S3Service,
+  ) {}
 
   /**
    * Request PDF generation for a student (Admin only)
@@ -88,18 +91,26 @@ export class RaporController {
       throw new NotFoundException('Rapor file not ready or does not exist');
     }
 
-    // Construct file path - remove leading slash if exists
-    const relativePath = raporFile.fileUrl.startsWith('/')
-      ? raporFile.fileUrl.substring(1)
-      : raporFile.fileUrl;
-    const filePath = join(process.cwd(), relativePath);
-
-    if (!existsSync(filePath)) {
-      throw new NotFoundException('Rapor file not found on server');
+    // Check if file exists in S3
+    const fileExists = await this.s3Service.fileExistsInBucket(
+      raporFile.fileUrl,
+      'rapor',
+    );
+    if (!fileExists) {
+      throw new NotFoundException('Rapor file not found in S3');
     }
 
-    // Get file stats
-    const fileStats = statSync(filePath);
+    // Get file stats from S3
+    const fileStats = await this.s3Service.getFileStatFromBucket(
+      raporFile.fileUrl,
+      'rapor',
+    );
+
+    // Get file stream from S3
+    const fileStream = await this.s3Service.getFileFromBucket(
+      raporFile.fileUrl,
+      'rapor',
+    );
 
     // Set response headers
     res.set({
@@ -109,7 +120,7 @@ export class RaporController {
     });
 
     // Return StreamableFile
-    return new StreamableFile(createReadStream(filePath));
+    return new StreamableFile(fileStream);
   }
 
   /**
@@ -139,5 +150,25 @@ export class RaporController {
   @Roles('ADMIN')
   async getAllFiles() {
     return await this.raporService.getAllRaporFiles();
+  }
+
+  /**
+   * Delete rapor file (admin only)
+   * DELETE /rapor/:raporFileId
+   */
+  @Delete(':raporFileId')
+  @Roles('ADMIN')
+  async deleteRapor(@Param('raporFileId') raporFileId: string) {
+    return await this.raporService.deleteRaporFile(raporFileId);
+  }
+
+  /**
+   * Retry/Regenerate rapor (admin only)
+   * POST /rapor/retry/:raporFileId
+   */
+  @Post('retry/:raporFileId')
+  @Roles('ADMIN')
+  async retryRapor(@Param('raporFileId') raporFileId: string) {
+    return await this.raporService.retryRaporGeneration(raporFileId);
   }
 }

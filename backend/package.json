@@ -25,7 +25,8 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "puppeteer:install": "puppeteer browsers install chrome",
     "prepare": "husky",
-    "seed:prod": "ts-node prisma/seed-prod.ts"
+    "seed:prod": "ts-node prisma/seed-prod.ts",
+    "s3:init-rapor": "ts-node src/scripts/init-rapor-bucket.ts"
   },
   "dependencies": {
     "@nestjs-modules/mailer": "^2.0.2",
@@ -41,6 +42,7 @@
     "@prisma/client": "^6.19.0",
     "argon2": "^0.44.0",
     "bull": "^4.16.3",
+    "chromiumly": "^4.2.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "cookie-parser": "^1.4.7",
@@ -54,7 +56,6 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "prisma": "^6.19.0",
-    "puppeteer": "^24.34.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
     "swagger-ui-express": "^5.0.1"

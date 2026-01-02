@@ -1,13 +1,17 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RaporQueueService } from './rapor-queue.service';
+import { S3Service } from '../s3/s3.service';
 import { RaporStatus } from '@prisma/client';
 
 @Injectable()
 export class RaporService {
+  private readonly logger = new Logger(RaporService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly queueService: RaporQueueService,
+    private readonly s3Service: S3Service,
   ) {}
 
   /**
@@ -121,5 +125,66 @@ export class RaporService {
     return await this.prisma.raporFile.findMany({
       orderBy: { createdAt: 'desc' },
     });
+  }
+
+  /**
+   * Delete rapor file (admin only)
+   */
+  async deleteRaporFile(raporFileId: string) {
+    const raporFile = await this.prisma.raporFile.findUnique({
+      where: { id: raporFileId },
+    });
+
+    if (!raporFile) {
+      throw new NotFoundException('Rapor file not found');
+    }
+
+    // If file exists in S3, delete it
+    if (raporFile.fileUrl) {
+      try {
+        const fileExists = await this.s3Service.fileExistsInBucket(
+          raporFile.fileUrl,
+          'rapor',
+        );
+        if (fileExists) {
+          await this.s3Service.deleteFileFromBucket(raporFile.fileUrl, 'rapor');
+          this.logger.log(`Deleted file from S3: ${raporFile.fileUrl}`);
+        }
+      } catch (error) {
+        this.logger.error('Failed to delete file from S3:', error);
+      }
+    }
+
+    // Delete from database
+    await this.prisma.raporFile.delete({
+      where: { id: raporFileId },
+    });
+
+    return {
+      message: 'Rapor file deleted successfully',
+      raporFileId,
+    };
+  }
+
+  /**
+   * Retry/Regenerate rapor (admin only)
+   * Deletes existing rapor and creates a new generation request
+   */
+  async retryRaporGeneration(raporFileId: string) {
+    const raporFile = await this.prisma.raporFile.findUnique({
+      where: { id: raporFileId },
+    });
+
+    if (!raporFile) {
+      throw new NotFoundException('Rapor file not found');
+    }
+
+    const { studentId, semesterId } = raporFile;
+
+    // Delete existing rapor (including file on disk)
+    await this.deleteRaporFile(raporFileId);
+
+    // Create new rapor generation request
+    return await this.requestPdfGeneration(studentId, semesterId);
   }
 }

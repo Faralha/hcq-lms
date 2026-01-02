@@ -2,11 +2,12 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectQueue, Process, Processor } from '@nestjs/bull';
 import type { Queue, Job } from 'bull';
 import { PrismaService } from '../prisma/prisma.service';
+import { S3Service } from '../s3/s3.service';
 import { RaporStatus } from '@prisma/client';
-import * as puppeteer from 'puppeteer';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as Handlebars from 'handlebars';
+import { HtmlConverter } from 'chromiumly';
 
 interface RaporJobData {
   raporFileId: string;
@@ -54,6 +55,7 @@ export class RaporQueueService implements OnModuleInit {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly s3Service: S3Service,
     @InjectQueue('rapor-pdf') private readonly raporQueue: Queue<RaporJobData>,
   ) {}
 
@@ -108,24 +110,30 @@ export class RaporQueueService implements OnModuleInit {
         data: { status: RaporStatus.PROCESSING },
       });
 
-      // Generate PDF
+      // Generate PDF and upload to S3
       const fileUrl = await this.generateRaporPdf(studentId, semesterId);
 
-      // Validate file actually exists before marking as COMPLETED
-      const absoluteFilePath = path.join(process.cwd(), fileUrl);
-      if (!fs.existsSync(absoluteFilePath)) {
+      // Validate file actually exists in S3 before marking as COMPLETED
+      const fileExists = await this.s3Service.fileExistsInBucket(
+        fileUrl,
+        'rapor',
+      );
+      if (!fileExists) {
         throw new Error(
-          `PDF file was not created successfully at path: ${absoluteFilePath}`,
+          `PDF file was not uploaded successfully to S3: ${fileUrl}`,
         );
       }
 
-      const fileStats = fs.statSync(absoluteFilePath);
+      const fileStats = await this.s3Service.getFileStatFromBucket(
+        fileUrl,
+        'rapor',
+      );
       if (fileStats.size === 0) {
         throw new Error(`Generated PDF file is empty (0 bytes)`);
       }
 
       this.logger.log(
-        `PDF file verified: ${absoluteFilePath} (${fileStats.size} bytes)`,
+        `PDF file verified in S3: ${fileUrl} (${fileStats.size} bytes)`,
       );
 
       // Update status to COMPLETED with file URL (only after validation)
@@ -396,51 +404,70 @@ export class RaporQueueService implements OnModuleInit {
     this.logger.log(`Generating HTML template`);
     const html = this.generateHtmlTemplate(data);
 
-    // Create directory structure: rapor/{semester_name}/ (inside backend project)
-    // Sanitize semester name: remove/replace invalid characters for filenames
+    // Sanitize semester name for S3 folder structure
     const sanitizedSemesterName = semester.nama.replace(/[^a-zA-Z0-9-_]/g, '_');
-    const raporBaseDir = path.join(process.cwd(), 'rapor');
-    const semesterDir = path.join(raporBaseDir, sanitizedSemesterName);
 
-    if (!fs.existsSync(semesterDir)) {
-      fs.mkdirSync(semesterDir, { recursive: true });
-    }
-
-    // Generate filename
+    // Generate S3 object key (path in bucket)
     const filename = `rapor_${studentId}_${Date.now()}.pdf`;
-    const filePath = path.join(semesterDir, filename);
+    const s3ObjectKey = `${sanitizedSemesterName}/${filename}`;
 
-    this.logger.log(`Launching Puppeteer to generate PDF`);
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    // Generate PDF using Chromiumly (Gotenberg client)
+    this.logger.log(`Generating PDF with Chromiumly`);
+
+    // Create temporary directory for HTML file (Chromiumly requires index.html file)
+    const tempDir = path.join(process.cwd(), 'temp', `rapor_${Date.now()}`);
+    fs.mkdirSync(tempDir, { recursive: true });
+
+    const tempHtmlPath = path.join(tempDir, 'index.html');
 
     try {
-      const page = await browser.newPage();
-      await page.setContent(html, { waitUntil: 'networkidle0' });
-      await page.pdf({
-        path: filePath,
-        format: 'A4',
-        printBackground: true,
-        margin: {
-          top: '20mm',
-          right: '15mm',
-          bottom: '20mm',
-          left: '15mm',
+      // Write HTML to temporary file
+      fs.writeFileSync(tempHtmlPath, html, 'utf-8');
+
+      // Convert HTML to PDF using Chromiumly
+      const htmlConverter = new HtmlConverter();
+      const pdfBuffer = await htmlConverter.convert({
+        html: tempHtmlPath,
+        properties: {
+          size: {
+            width: 8.27, // A4 width in inches (210mm)
+            height: 11.69, // A4 height in inches (297mm)
+          },
+          margins: {
+            top: 0.79, // 20mm in inches
+            bottom: 0.79, // 20mm in inches
+            left: 0.59, // 15mm in inches
+            right: 0.59, // 15mm in inches
+          },
+          printBackground: true,
+          preferCssPageSize: false,
+          landscape: false,
+          scale: 1.0,
         },
+        emulatedMediaType: 'print',
+        waitDelay: '2s', // Wait for content to load
+        skipNetworkIdleEvent: false,
       });
 
-      this.logger.log(`PDF generated successfully: ${filename}`);
+      // Upload PDF buffer to S3
+      await this.s3Service.uploadPdfBuffer(pdfBuffer, s3ObjectKey, 'rapor');
 
-      // Return URL with sanitized semester name (consistent with directory creation)
-      const sanitizedSemesterName = semester.nama.replace(
-        /[^a-zA-Z0-9-_]/g,
-        '_',
-      );
-      return `/rapor/${sanitizedSemesterName}/${filename}`;
+      this.logger.log(`PDF uploaded to S3: ${s3ObjectKey}`);
+
+      // Return S3 object key
+      return s3ObjectKey;
     } finally {
-      await browser.close();
+      // Clean up temporary files
+      try {
+        if (fs.existsSync(tempHtmlPath)) {
+          fs.unlinkSync(tempHtmlPath);
+        }
+        if (fs.existsSync(tempDir)) {
+          fs.rmdirSync(tempDir);
+        }
+      } catch (cleanupError) {
+        this.logger.warn(`Failed to clean up temporary files: ${cleanupError}`);
+      }
     }
   }
 }
