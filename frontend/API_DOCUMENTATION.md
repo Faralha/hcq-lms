@@ -480,6 +480,173 @@ Content-Type: application/json
 }
 ```
 
+### List All Invitations (Admin Only)
+
+**Endpoint:** `GET /api/v1/auth/invitations`
+
+**Public:** No 🔒 (Admin only)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin-token>
+```
+
+**Description:** Get a list of all pengajar invitations with their current status (computed from `used` and `expiresAt` fields).
+
+**Response (200 OK):**
+
+```json
+[
+  {
+    "id": "uuid",
+    "email": "teacher1@example.com",
+    "token": "abc123...",
+    "expiresAt": "2026-01-09T12:00:00.000Z",
+    "used": false,
+    "createdAt": "2026-01-02T12:00:00.000Z",
+    "updatedAt": "2026-01-02T12:00:00.000Z",
+    "status": "PENDING"
+  },
+  {
+    "id": "uuid",
+    "email": "teacher2@example.com",
+    "token": "def456...",
+    "expiresAt": "2025-12-25T12:00:00.000Z",
+    "used": false,
+    "createdAt": "2025-12-18T12:00:00.000Z",
+    "updatedAt": "2025-12-18T12:00:00.000Z",
+    "status": "EXPIRED"
+  },
+  {
+    "id": "uuid",
+    "email": "teacher3@example.com",
+    "token": "ghi789...",
+    "expiresAt": "2026-01-05T12:00:00.000Z",
+    "used": true,
+    "createdAt": "2025-12-29T12:00:00.000Z",
+    "updatedAt": "2026-01-01T12:00:00.000Z",
+    "status": "USED"
+  }
+]
+```
+
+**Status Options:**
+
+| Status      | Description                               |
+| ----------- | ----------------------------------------- |
+| `PENDING`   | Invitation is valid and waiting for use   |
+| `EXPIRED`   | Invitation has expired (past expiresAt)   |
+| `USED`      | Invitation has been used for registration |
+
+### Get Invitation by ID (Admin Only)
+
+**Endpoint:** `GET /api/v1/auth/invitations/:id`
+
+**Public:** No 🔒 (Admin only)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin-token>
+```
+
+**Response (200 OK):**
+
+```json
+{
+  "id": "uuid",
+  "email": "teacher@example.com",
+  "token": "abc123...",
+  "expiresAt": "2026-01-09T12:00:00.000Z",
+  "used": false,
+  "createdAt": "2026-01-02T12:00:00.000Z",
+  "updatedAt": "2026-01-02T12:00:00.000Z",
+  "status": "PENDING"
+}
+```
+
+**Error Response:**
+
+```json
+{
+  "statusCode": 404,
+  "message": "Invitation not found"
+}
+```
+
+### Delete Invitation (Admin Only)
+
+**Endpoint:** `DELETE /api/v1/auth/invitations/:id`
+
+**Public:** No 🔒 (Admin only)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin-token>
+```
+
+**Description:** Delete/cancel an invitation. This can be used to cancel pending invitations or clean up old entries.
+
+**Response (200 OK):**
+
+```json
+{
+  "message": "Invitation deleted successfully"
+}
+```
+
+**Error Response:**
+
+```json
+{
+  "statusCode": 404,
+  "message": "Invitation not found"
+}
+```
+
+### Resend Invitation (Admin Only)
+
+**Endpoint:** `POST /api/v1/auth/invitations/:id/resend`
+
+**Public:** No 🔒 (Admin only)
+
+**Headers:**
+
+```
+Authorization: Bearer <admin-token>
+```
+
+**Description:** Resend an invitation email to the teacher. This generates a new token, extends the expiration date to 7 days from now, and sends a new email with the updated magic link. Useful when the original invitation has expired.
+
+**Response (200 OK):**
+
+```json
+{
+  "message": "Invitation resent successfully",
+  "email": "teacher@example.com",
+  "expiresAt": "2026-01-09T12:00:00.000Z"
+}
+```
+
+**Error Responses:**
+
+```json
+// Invitation not found
+{
+  "statusCode": 404,
+  "message": "Invitation not found"
+}
+
+// Invitation already used
+{
+  "statusCode": 400,
+  "message": "Cannot resend: invitation already used"
+}
+```
+
+
 ### Get Current User
 
 **Endpoint:** `GET /api/v1/auth/me`

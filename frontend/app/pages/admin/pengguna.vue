@@ -9,7 +9,7 @@
     <!-- Invite Pengajar -->
     <UModal v-model:open="isInviteModalOpen" title="Undang Pengajar Baru"
       description="Undang pengajar baru dengan magic link langsung ke inbox email.">
-      <UButton label="Invite Pengajar" icon="i-lucide-user-plus" @click="isInviteModalOpen = true" />
+      <UButton label="Undang Pengajar" icon="i-lucide-user-plus" @click="isInviteModalOpen = true" />
 
       <template #body>
         <UForm :schema="inviteSchema" :state="inviteState" @submit="onInviteSubmit">
@@ -73,7 +73,7 @@
     </UModal>
 
     <!-- Tableview -->
-    <div class="flex flex-col flex-1 w-full border border-accented rounded-lg overflow-hidden">
+    <div class="flex flex-col flex-1 w-full border border-accented rounded-lg overflow-hidden h-auto">
       <!-- Filter & Actions Bar -->
       <div class="flex items-center justify-between gap-3 px-4 py-3.5 border-b border-accented">
         <UInput v-model="emailFilter" class="max-w-sm min-w-[12ch]" placeholder="Filter by email..."
@@ -95,6 +95,10 @@
       </div>
     </div>
   </div>
+
+  <!-- Invited Pengajar -->
+  <AdminInvitedTeachers class="mt-12" />
+
 </template>
 
 <script setup lang="ts">
