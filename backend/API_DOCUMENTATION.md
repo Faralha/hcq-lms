@@ -21,6 +21,7 @@
    - [SPP](#spp)
    - [Gaji](#gaji)
    - [Rapor](#rapor)
+   - [Academic Remark](#academic-remark)
 4. [Authorization Matrix](#-authorization-matrix)
 5. [Error Handling](#-error-handling)
 
@@ -1302,30 +1303,33 @@ Authorization: Bearer <token>
 **Response:**
 
 ```json
-{
-  "kelas": {
-    "namaKelas": "Tahsin - Kelas Pagi",
-    "semester": { "nama": "Ganjil 2025/2026" },
-    "mataPelajaran": { "nama": "Tahsin" }
-  },
-  "komponenList": [
-    { "id": "uuid", "nama": "UTS", "bobot": 30 },
-    { "id": "uuid", "nama": "UAS", "bobot": 40 }
-  ],
-  "pelajarList": [
-    {
-      "user": {
-        "id": "uuid",
-        "nama": "Muhammad Ali",
-        "email": "ali@hcq.com"
-      },
-      "nilaiList": [
-        { "komponenId": "uuid", "nilai": 85 },
-        { "komponenId": "uuid", "nilai": 90 }
-      ]
-    }
-  ]
-}
+[
+  {
+    "id": "komponen-uuid",
+    "kelasId": "kelas-uuid",
+    "nama": "UTS",
+    "bobot": 30,
+    "createdBy": "pengajar-uuid",
+    "createdAt": "2025-11-06T...",
+    "updatedAt": "2025-11-06T...",
+    "nilai": [
+      {
+        "id": "nilai-uuid",
+        "komponenId": "komponen-uuid",
+        "userId": "pelajar-uuid",
+        "nilai": 85,
+        "createdAt": "2025-11-06T...",
+        "updatedAt": "2025-11-06T...",
+        "user": {
+          "id": "pelajar-uuid",
+          "nama": "Muhammad Ali",
+          "email": "ali@hcq.com",
+          "role": "PELAJAR"
+        }
+      }
+    ]
+  }
+]
 ```
 
 #### Get My Nilai (Pelajar)
@@ -1343,27 +1347,37 @@ Authorization: Bearer <pelajar-token>
     "kelas": {
       "id": "uuid",
       "namaKelas": "Tahsin - Kelas Pagi",
-      "semester": { "nama": "Ganjil 2025/2026" },
-      "mataPelajaran": { "nama": "Tahsin" }
+      "semester": {
+        "id": "semester-uuid",
+        "nama": "Ganjil 2025/2026"
+      },
+      "mataPelajaran": {
+        "id": "mapel-uuid",
+        "nama": "Tahsin"
+      }
     },
     "nilaiList": [
       {
-        "id": "uuid",
+        "id": "nilai-uuid",
         "nilai": 85,
         "komponen": {
-          "id": "uuid",
+          "id": "komponen-uuid",
           "nama": "UTS",
           "bobot": 30
-        }
+        },
+        "createdAt": "2025-11-06T...",
+        "updatedAt": "2025-11-06T..."
       },
       {
-        "id": "uuid",
+        "id": "nilai-uuid",
         "nilai": 90,
         "komponen": {
-          "id": "uuid",
+          "id": "komponen-uuid",
           "nama": "UAS",
           "bobot": 40
-        }
+        },
+        "createdAt": "2025-11-06T...",
+        "updatedAt": "2025-11-06T..."
       }
     ]
   }
@@ -2337,6 +2351,185 @@ See [REDIS_QUEUE_SETUP.md](REDIS_QUEUE_SETUP.md) for:
 
 ---
 
+### Academic Remark
+
+API untuk mengelola catatan akademik (academic remarks) untuk setiap pelajar per kelas per semester.
+
+#### Create Academic Remark (Pengajar)
+
+```http
+POST /academic-remark
+Authorization: Bearer <pengajar-token>
+Content-Type: application/json
+
+{
+  "userId": "pelajar-uuid",
+  "kelasId": "kelas-uuid",
+  "semesterId": "semester-uuid",
+  "catatan": "Santri menunjukkan kemajuan yang baik dalam tajwid."
+}
+```
+
+**Response (201 Created):**
+
+```json
+{
+  "id": "remark-uuid",
+  "userId": "pelajar-uuid",
+  "kelasId": "kelas-uuid",
+  "semesterId": "semester-uuid",
+  "catatan": "Santri menunjukkan kemajuan yang baik dalam tajwid.",
+  "createdAt": "2025-11-06T...",
+  "updatedAt": "2025-11-06T...",
+  "user": {
+    "id": "pelajar-uuid",
+    "nama": "Muhammad Ali",
+    "email": "ali@hcq.com"
+  },
+  "kelas": {
+    "id": "kelas-uuid",
+    "namaKelas": "Tahsin - Kelas Pagi"
+  },
+  "semester": {
+    "id": "semester-uuid",
+    "nama": "Ganjil 2025/2026"
+  }
+}
+```
+
+**Validations:**
+
+- ✅ Pengajar must be assigned to kelas
+- ✅ User (pelajar) must be enrolled in kelas
+- ✅ Semester must exist
+- ✅ Only one remark per user/kelas/semester (unique constraint)
+
+**Error Responses:**
+
+```json
+// Already exists
+{
+  "statusCode": 409,
+  "message": "Academic remark already exists for this user/kelas/semester. Use PATCH to update."
+}
+```
+
+#### Get Academic Remarks by Kelas (Pengajar/Admin)
+
+```http
+GET /academic-remark/kelas/:kelasId
+Authorization: Bearer <token>
+```
+
+**Response:**
+
+```json
+[
+  {
+    "id": "remark-uuid",
+    "userId": "pelajar-uuid",
+    "kelasId": "kelas-uuid",
+    "semesterId": "semester-uuid",
+    "catatan": "Santri menunjukkan kemajuan yang baik dalam tajwid.",
+    "createdAt": "2025-11-06T...",
+    "updatedAt": "2025-11-06T...",
+    "user": {
+      "id": "pelajar-uuid",
+      "nama": "Muhammad Ali",
+      "email": "ali@hcq.com"
+    },
+    "semester": {
+      "id": "semester-uuid",
+      "nama": "Ganjil 2025/2026"
+    }
+  }
+]
+```
+
+#### Get My Academic Remarks (Pelajar)
+
+```http
+GET /academic-remark/saya
+Authorization: Bearer <pelajar-token>
+```
+
+**Response:**
+
+```json
+[
+  {
+    "id": "remark-uuid",
+    "userId": "pelajar-uuid",
+    "kelasId": "kelas-uuid",
+    "semesterId": "semester-uuid",
+    "catatan": "Santri menunjukkan kemajuan yang baik dalam tajwid.",
+    "createdAt": "2025-11-06T...",
+    "updatedAt": "2025-11-06T...",
+    "kelas": {
+      "id": "kelas-uuid",
+      "namaKelas": "Tahsin - Kelas Pagi",
+      "mataPelajaran": {
+        "id": "mapel-uuid",
+        "nama": "Tahsin"
+      }
+    },
+    "semester": {
+      "id": "semester-uuid",
+      "nama": "Ganjil 2025/2026"
+    }
+  }
+]
+```
+
+#### Get Academic Remark by ID
+
+```http
+GET /academic-remark/:id
+Authorization: Bearer <token>
+```
+
+**Response:** Single academic remark object with user, kelas, and semester relations.
+
+#### Update Academic Remark (Pengajar)
+
+```http
+PATCH /academic-remark/:id
+Authorization: Bearer <pengajar-token>
+Content-Type: application/json
+
+{
+  "catatan": "Updated catatan akademik untuk santri."
+}
+```
+
+**Notes:**
+
+- Only `catatan` field can be updated
+- Pengajar must be assigned to the kelas
+
+#### Delete Academic Remark (Pengajar)
+
+```http
+DELETE /academic-remark/:id
+Authorization: Bearer <pengajar-token>
+```
+
+**Response:**
+
+```json
+{
+  "id": "remark-uuid",
+  "userId": "pelajar-uuid",
+  "kelasId": "kelas-uuid",
+  "semesterId": "semester-uuid",
+  "catatan": "...",
+  "createdAt": "...",
+  "updatedAt": "..."
+}
+```
+
+---
+
 ## Authorization Matrix
 
 | Module                  | Create           | Read             | Update           | Delete        |
@@ -2364,6 +2557,7 @@ See [REDIS_QUEUE_SETUP.md](REDIS_QUEUE_SETUP.md) for:
 | **Rapor List**          | -                | ADMIN/PELAJAR    | -                | -             |
 | **Rapor Delete**        | -                | -                | -                | ADMIN         |
 | **Rapor Retry**         | ADMIN            | -                | -                | -             |
+| **Academic Remark**     | PENGAJAR         | PENGAJAR/PELAJAR | PENGAJAR         | PENGAJAR      |
 
 \*PELAJAR can only download their own rapor
 

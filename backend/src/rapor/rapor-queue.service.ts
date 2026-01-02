@@ -36,6 +36,7 @@ interface KelasGradeData {
   grades: GradeData[];
   totalScore: number;
   attendance: AttendanceData;
+  academicRemark?: string | null;
 }
 
 interface StudentRaporData {
@@ -289,6 +290,20 @@ export class RaporQueueService implements OnModuleInit {
       }
     }
 
+    // Fetch academic remarks for this student
+    const academicRemarks = await this.prisma.academicRemark.findMany({
+      where: { userId: studentId },
+    });
+
+    // Map academic remarks by kelasId for easy lookup
+    const remarksByKelasId = academicRemarks.reduce(
+      (acc, remark) => {
+        acc[remark.kelasId] = remark.catatan;
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+
     return {
       student,
       gradesPerClass: Array.from(gradesPerClass.entries()).map(
@@ -302,6 +317,7 @@ export class RaporQueueService implements OnModuleInit {
             alpha: 0,
             total: 0,
           },
+          academicRemark: remarksByKelasId[kelasId] || null,
         }),
       ),
     };
@@ -348,6 +364,8 @@ export class RaporQueueService implements OnModuleInit {
           bobotPercent: g.bobot.toFixed(0),
           nilaiFormatted: g.nilai.toFixed(2),
         })),
+        academicRemark: kelas.academicRemark,
+        hasRemark: !!kelas.academicRemark,
       };
     });
 

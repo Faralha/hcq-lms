@@ -71,6 +71,7 @@ model User {
   komponenNilai    KomponenNilai[]
   refreshTokens    RefreshToken[]
   raporFiles       RaporFile[]
+  academicRemarks  AcademicRemark[]
 
   @@map("users")
 }
@@ -113,8 +114,9 @@ model Semester {
   updatedAt     DateTime       @updatedAt
 
   // Relations
-  kelas      Kelas[]
-  raporFiles RaporFile[]
+  kelas           Kelas[]
+  raporFiles      RaporFile[]
+  academicRemarks AcademicRemark[]
 
   @@map("semesters")
 }
@@ -151,6 +153,7 @@ model Kelas {
   komponenNilai    KomponenNilai[]
   materiSections   MateriSection[]
   announcements    Announcement[]
+  academicRemarks  AcademicRemark[]
 
   @@map("kelas")
 }
@@ -336,4 +339,22 @@ model RaporFile {
 
   @@unique([studentId, semesterId])
   @@map("rapor_files")
+}
+
+model AcademicRemark {
+  id         String   @id @default(uuid())
+  userId     String
+  kelasId    String
+  semesterId String
+  catatan    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kelas    Kelas    @relation(fields: [kelasId], references: [id], onDelete: Cascade)
+  semester Semester @relation(fields: [semesterId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kelasId, semesterId])
+  @@map("academic_remarks")
 }
