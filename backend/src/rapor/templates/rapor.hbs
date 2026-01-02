@@ -201,6 +201,13 @@
           <span>Total Pertemuan</span>
         </div>
       </div>
+
+      {{#if this.hasRemark}}
+      <div style='margin-top: 15px; padding: 15px; background: #e8f4fd; border-left: 4px solid #3498db; border-radius: 4px;'>
+        <strong style='color: #2c3e50; display: block; margin-bottom: 8px;'>Catatan Akademik:</strong>
+        <p style='color: #555; margin: 0; line-height: 1.6;'>{{this.academicRemark}}</p>
+      </div>
+      {{/if}}
     {{/each}}
 
     <div class='footer'>

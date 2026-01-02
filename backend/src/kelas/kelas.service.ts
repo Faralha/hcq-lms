@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Role } from '@prisma/client';
@@ -46,8 +47,39 @@ export class KelasService {
     });
   }
 
-  async findAll() {
+  async findAll(userId: string, userRole: Role) {
+    // Admin can see all classes
+    if (userRole === Role.ADMIN) {
+      return await this.prisma.kelas.findMany({
+        include: {
+          semester: true,
+          mataPelajaran: true,
+          enrollments: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  nama: true,
+                  email: true,
+                  role: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+
+    // Pengajar and Pelajar can only see classes they are enrolled in
     return await this.prisma.kelas.findMany({
+      where: {
+        enrollments: {
+          some: {
+            userId: userId,
+          },
+        },
+      },
       include: {
         semester: true,
         mataPelajaran: true,
@@ -68,7 +100,7 @@ export class KelasService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, userId?: string, userRole?: Role) {
     const kelas = await this.prisma.kelas.findUnique({
       where: { id },
       include: {
@@ -91,6 +123,23 @@ export class KelasService {
 
     if (!kelas) {
       throw new NotFoundException(`Kelas with ID ${id} not found`);
+    }
+
+    // If userId and userRole are provided, validate access
+    if (userId && userRole) {
+      // Admin can access any class
+      if (userRole !== Role.ADMIN) {
+        // Check if user is enrolled in this class
+        const isEnrolled = kelas.enrollments.some(
+          (enrollment) => enrollment.userId === userId,
+        );
+
+        if (!isEnrolled) {
+          throw new ForbiddenException(
+            'Anda tidak memiliki akses ke kelas ini',
+          );
+        }
+      }
     }
 
     return kelas;

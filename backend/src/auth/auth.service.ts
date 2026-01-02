@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ConflictException,
   BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -426,6 +427,118 @@ export class AuthService {
     return {
       message: 'Teacher registered successfully',
       user,
+    };
+  }
+
+  // ==================== Invitation CRUD Methods ====================
+
+  async getInvitations() {
+    const invitations = await this.prisma.pengajarInvitation.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Add computed status field
+    return invitations.map((invitation) => {
+      let status: 'PENDING' | 'USED' | 'EXPIRED';
+      if (invitation.used) {
+        status = 'USED';
+      } else if (new Date() > invitation.expiresAt) {
+        status = 'EXPIRED';
+      } else {
+        status = 'PENDING';
+      }
+
+      return {
+        ...invitation,
+        status,
+      };
+    });
+  }
+
+  async getInvitationById(id: string) {
+    const invitation = await this.prisma.pengajarInvitation.findUnique({
+      where: { id },
+    });
+
+    if (!invitation) {
+      throw new NotFoundException('Invitation not found');
+    }
+
+    // Add computed status field
+    let status: 'PENDING' | 'USED' | 'EXPIRED';
+    if (invitation.used) {
+      status = 'USED';
+    } else if (new Date() > invitation.expiresAt) {
+      status = 'EXPIRED';
+    } else {
+      status = 'PENDING';
+    }
+
+    return {
+      ...invitation,
+      status,
+    };
+  }
+
+  async deleteInvitation(id: string) {
+    const invitation = await this.prisma.pengajarInvitation.findUnique({
+      where: { id },
+    });
+
+    if (!invitation) {
+      throw new NotFoundException('Invitation not found');
+    }
+
+    await this.prisma.pengajarInvitation.delete({
+      where: { id },
+    });
+
+    return {
+      message: 'Invitation deleted successfully',
+    };
+  }
+
+  async resendInvitation(id: string) {
+    const invitation = await this.prisma.pengajarInvitation.findUnique({
+      where: { id },
+    });
+
+    if (!invitation) {
+      throw new NotFoundException('Invitation not found');
+    }
+
+    if (invitation.used) {
+      throw new BadRequestException('Cannot resend: invitation already used');
+    }
+
+    // Generate new token and extend expiration
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    // Update invitation with new token
+    const updatedInvitation = await this.prisma.pengajarInvitation.update({
+      where: { id },
+      data: {
+        token,
+        expiresAt,
+      },
+    });
+
+    // Generate magic link
+    const magicLink = `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000'}/auth/validate-pengajar?token=${token}`;
+
+    // Send email with magic link
+    await this.emailService.sendMagicLinkEmail(
+      updatedInvitation.email,
+      updatedInvitation.email.split('@')[0],
+      magicLink,
+    );
+
+    return {
+      message: 'Invitation resent successfully',
+      email: updatedInvitation.email,
+      expiresAt: updatedInvitation.expiresAt,
     };
   }
 }

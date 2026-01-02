@@ -1,24 +1,36 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { MailerService } from '@nestjs-modules/mailer';
+import mjml2html from 'mjml';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
+  private readonly templatesDir = path.join(
+    process.cwd(),
+    'src',
+    'email',
+    'templates',
+  );
 
   constructor(private readonly mailerService: MailerService) {}
 
+  /**
+   * Send magic link invitation email to pengajar
+   */
   async sendMagicLinkEmail(
     to: string,
     recipientName: string,
     magicLink: string,
   ): Promise<boolean> {
     try {
-      const htmlTemplate = this.getMagicLinkTemplate(recipientName, magicLink);
+      const html = this.compileMagicLinkTemplate(recipientName, magicLink);
 
       await this.mailerService.sendMail({
         to,
         subject: 'Undangan Bergabung sebagai Pengajar - HCQ',
-        html: htmlTemplate,
+        html,
       });
 
       this.logger.log(`Magic link email sent successfully to ${to}`);
@@ -33,14 +45,17 @@ export class EmailService {
     }
   }
 
+  /**
+   * Send welcome email to newly registered user
+   */
   async sendWelcomeEmail(to: string, recipientName: string): Promise<boolean> {
     try {
-      const htmlTemplate = this.getWelcomeTemplate(recipientName);
+      const html = this.compileWelcomeTemplate(recipientName);
 
       await this.mailerService.sendMail({
         to,
         subject: 'Selamat Datang di HCQ!',
-        html: htmlTemplate,
+        html,
       });
 
       this.logger.log(`Welcome email sent successfully to ${to}`);
@@ -55,262 +70,57 @@ export class EmailService {
     }
   }
 
-  private getMagicLinkTemplate(
+  /**
+   * Compile magic link MJML template
+   */
+  private compileMagicLinkTemplate(
     recipientName: string,
     magicLink: string,
   ): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              background-color: #f4f4f4;
-              color: #333;
-              line-height: 1.6;
-            }
-            .container {
-              max-width: 600px;
-              margin: 0 auto;
-              background-color: white;
-              padding: 20px;
-              border-radius: 8px;
-              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            }
-            .header {
-              text-align: center;
-              margin-bottom: 30px;
-              border-bottom: 2px solid #4CAF50;
-              padding-bottom: 20px;
-            }
-            .header h1 {
-              color: #4CAF50;
-              margin: 0;
-              font-size: 28px;
-            }
-            .content {
-              margin-bottom: 30px;
-            }
-            .greeting {
-              font-size: 16px;
-              margin-bottom: 20px;
-            }
-            .magic-link-section {
-              background-color: #f9f9f9;
-              padding: 20px;
-              border-radius: 5px;
-              margin: 20px 0;
-              border-left: 4px solid #4CAF50;
-            }
-            .cta-button {
-              display: inline-block;
-              background-color: #4CAF50;
-              color: white;
-              padding: 12px 30px;
-              text-decoration: none;
-              border-radius: 4px;
-              font-weight: bold;
-              margin: 20px 0;
-              text-align: center;
-            }
-            .cta-button:hover {
-              background-color: #45a049;
-            }
-            .link-text {
-              word-break: break-all;
-              background-color: #efefef;
-              padding: 10px;
-              border-radius: 4px;
-              font-size: 12px;
-              margin: 10px 0;
-              color: #666;
-            }
-            .expiration {
-              background-color: #fff3cd;
-              border-left: 4px solid #ffc107;
-              padding: 15px;
-              border-radius: 4px;
-              margin: 20px 0;
-              color: #856404;
-            }
-            .footer {
-              text-align: center;
-              border-top: 1px solid #ddd;
-              padding-top: 20px;
-              font-size: 12px;
-              color: #999;
-            }
-            .footer p {
-              margin: 5px 0;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>HCQ Platform</h1>
-            </div>
-            
-            <div class="content">
-              <div class="greeting">
-                Halo <strong>${this.escapeHtml(recipientName)}</strong>,
-              </div>
-              
-              <p>
-                Anda telah diundang untuk bergabung sebagai pengajar di platform HCQ. 
-                Klik tombol di bawah ini untuk membuat akun Anda:
-              </p>
-              
-              <div style="text-align: center;">
-                <a href="${this.escapeHtml(magicLink)}" class="cta-button">Buat Akun Pengajar</a>
-              </div>
-              
-              <p>Atau salin dan paste link berikut di browser Anda:</p>
-              <div class="link-text">${this.escapeHtml(magicLink)}</div>
-              
-              <div class="expiration">
-                <strong>⏰ Perhatian:</strong> Link undangan ini hanya berlaku selama 7 hari. 
-                Setelah itu, Anda perlu meminta undangan baru.
-              </div>
-              
-              <p>
-                Jika Anda tidak meminta undangan ini, abaikan email ini dan tidak ada tindakan 
-                yang perlu diambil.
-              </p>
-            </div>
-            
-            <div class="footer">
-              <p>&copy; 2025 HCQ Platform. All rights reserved.</p>
-              <p>Jangan balas email ini. Email ini adalah pesan otomatis.</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+    const templatePath = path.join(this.templatesDir, 'magic-link.mjml');
+    let mjmlContent = fs.readFileSync(templatePath, 'utf-8');
+
+    // Replace placeholders
+    mjmlContent = mjmlContent
+      .replace(/\{\{recipientName\}\}/g, this.escapeHtml(recipientName))
+      .replace(/\{\{magicLink\}\}/g, this.escapeHtml(magicLink));
+
+    // Compile MJML to HTML
+    const { html, errors } = mjml2html(mjmlContent);
+
+    if (errors && errors.length > 0) {
+      this.logger.warn('MJML compilation warnings:', errors);
+    }
+
+    return html;
   }
 
-  private getWelcomeTemplate(recipientName: string): string {
-    return `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              background-color: #f4f4f4;
-              color: #333;
-              line-height: 1.6;
-            }
-            .container {
-              max-width: 600px;
-              margin: 0 auto;
-              background-color: white;
-              padding: 20px;
-              border-radius: 8px;
-              box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            }
-            .header {
-              text-align: center;
-              margin-bottom: 30px;
-              border-bottom: 2px solid #4CAF50;
-              padding-bottom: 20px;
-            }
-            .header h1 {
-              color: #4CAF50;
-              margin: 0;
-              font-size: 28px;
-            }
-            .content {
-              margin-bottom: 30px;
-            }
-            .greeting {
-              font-size: 16px;
-              margin-bottom: 20px;
-            }
-            .feature-list {
-              background-color: #f9f9f9;
-              padding: 20px;
-              border-radius: 5px;
-              margin: 20px 0;
-              border-left: 4px solid #4CAF50;
-            }
-            .feature-list ul {
-              list-style: none;
-              padding: 0;
-            }
-            .feature-list li {
-              padding: 8px 0;
-              border-bottom: 1px solid #eee;
-            }
-            .feature-list li:last-child {
-              border-bottom: none;
-            }
-            .feature-list li:before {
-              content: "✓ ";
-              color: #4CAF50;
-              font-weight: bold;
-              margin-right: 10px;
-            }
-            .footer {
-              text-align: center;
-              border-top: 1px solid #ddd;
-              padding-top: 20px;
-              font-size: 12px;
-              color: #999;
-            }
-            .footer p {
-              margin: 5px 0;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>Selamat Datang!</h1>
-            </div>
-            
-            <div class="content">
-              <div class="greeting">
-                Halo <strong>${this.escapeHtml(recipientName)}</strong>,
-              </div>
-              
-              <p>
-                Terima kasih telah mendaftar di HCQ Platform! Akun Anda telah berhasil dibuat 
-                dan Anda sekarang dapat login untuk mulai menggunakan platform kami.
-              </p>
-              
-              <div class="feature-list">
-                <strong>Fitur yang tersedia untuk Anda:</strong>
-                <ul>
-                  <li>Mengelola kelas dan siswa</li>
-                  <li>Membuat dan mengunggah materi pembelajaran</li>
-                  <li>Melacak presensi siswa</li>
-                  <li>Mengelola nilai dan rapor</li>
-                  <li>Berkomunikasi dengan siswa melalui sistem</li>
-                </ul>
-              </div>
-              
-              <p>
-                Jika Anda memiliki pertanyaan atau membutuhkan bantuan, jangan ragu untuk 
-                menghubungi tim support kami.
-              </p>
-            </div>
-            
-            <div class="footer">
-              <p>&copy; 2025 HCQ Platform. All rights reserved.</p>
-              <p>Jangan balas email ini. Email ini adalah pesan otomatis.</p>
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
+  /**
+   * Compile welcome MJML template
+   */
+  private compileWelcomeTemplate(recipientName: string): string {
+    const templatePath = path.join(this.templatesDir, 'welcome.mjml');
+    let mjmlContent = fs.readFileSync(templatePath, 'utf-8');
+
+    // Replace placeholders
+    mjmlContent = mjmlContent.replace(
+      /\{\{recipientName\}\}/g,
+      this.escapeHtml(recipientName),
+    );
+
+    // Compile MJML to HTML
+    const { html, errors } = mjml2html(mjmlContent);
+
+    if (errors && errors.length > 0) {
+      this.logger.warn('MJML compilation warnings:', errors);
+    }
+
+    return html;
   }
 
+  /**
+   * Escape HTML special characters
+   */
   private escapeHtml(text: string): string {
     const map: { [key: string]: string } = {
       '&': '&amp;',

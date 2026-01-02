@@ -4,7 +4,7 @@ const argon2 = require('argon2');
 
 const prisma = new PrismaClient();
 
-const adminPassword = "PROD_ADMIN_PASSWORD_REMOVED"
+const adminPassword = 'PROD_ADMIN_PASSWORD_REMOVED';
 
 async function main() {
   console.log('🌱 Seeding production database...');

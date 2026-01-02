@@ -16,6 +16,8 @@ import { SppModule } from './spp/spp.module';
 import { GajiModule } from './gaji/gaji.module';
 import { MateriModule } from './materi/materi.module';
 import { RaporModule } from './rapor/rapor.module';
+import { S3Module } from './s3/s3.module';
+import { AcademicRemarkModule } from './academic-remark/academic-remark.module';
 
 @Module({
   imports: [
@@ -43,6 +45,8 @@ import { RaporModule } from './rapor/rapor.module';
     GajiModule,
     MateriModule,
     RaporModule,
+    S3Module,
+    AcademicRemarkModule,
   ],
   controllers: [AppController],
   providers: [AppService],

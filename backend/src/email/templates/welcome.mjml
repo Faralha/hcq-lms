@@ -1,0 +1,51 @@
+<mjml>
+  <mj-head>
+    <mj-attributes>
+      <mj-all font-family="Arial, sans-serif" />
+      <mj-text font-size="14px" color="#333333" line-height="1.6" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#f4f4f4">
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-image src="https://hcq.my.id/hcq.png" alt="HCQ" width="120px" />
+      </mj-column>
+    </mj-section>
+
+    <mj-section background-color="#ffffff" padding="30px">
+      <mj-column>
+        <mj-text font-size="20px" font-weight="bold" color="#2c3e50">
+          Selamat Datang di HCQ!
+        </mj-text>
+
+        <mj-text>
+          Halo <strong>{{recipientName}}</strong>,
+        </mj-text>
+
+        <mj-text>
+          Terima kasih telah mendaftar di HCQ Platform! Akun Anda telah berhasil dibuat dan Anda sekarang dapat login untuk mulai menggunakan platform kami.
+        </mj-text>
+
+        <mj-text padding="15px" background-color="#f9f9f9">
+          <strong>Fitur yang tersedia:</strong><br />
+          ✓ Mengelola kelas dan siswa<br />
+          ✓ Mengunggah materi pembelajaran<br />
+          ✓ Melacak presensi siswa<br />
+          ✓ Mengelola nilai dan rapor
+        </mj-text>
+
+        <mj-text font-size="12px" color="#999999">
+          Jika Anda memiliki pertanyaan, hubungi tim support kami.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+
+    <mj-section padding="20px 0">
+      <mj-column>
+        <mj-text align="center" font-size="11px" color="#999999">
+          © 2026 HCQ Platform. Jangan balas email ini.
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>
