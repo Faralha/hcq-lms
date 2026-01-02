@@ -10,6 +10,7 @@ import { CreateMateriSectionDto } from './dto/create-materi-section.dto';
 import { UpdateMateriSectionDto } from './dto/update-materi-section.dto';
 import { CreateMateriFileDto } from './dto/create-materi-file.dto';
 import { Readable } from 'stream';
+import type { MateriFile } from '@prisma/client';
 
 @Injectable()
 export class MateriService {
@@ -257,7 +258,9 @@ export class MateriService {
     });
   }
 
-  async getFileById(id: string): Promise<{ file: any; stream: Readable }> {
+  async getFileById(
+    id: string,
+  ): Promise<{ file: MateriFile; stream: Readable }> {
     const file = await this.prisma.materiFile.findUnique({
       where: { id },
     });

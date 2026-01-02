@@ -23,6 +23,8 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import type { Response, Request } from 'express';
+import type { MateriFile } from '@prisma/client';
+import type { Readable } from 'stream';
 
 @Controller('materi')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -121,12 +123,17 @@ export class MateriController {
     @Param('id') id: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { file, stream } = await this.materiService.getFileById(id);
+    const { file, stream }: { file: MateriFile; stream: Readable } =
+      await this.materiService.getFileById(id);
+
+    const contentType = file.mimetype || 'application/octet-stream';
+    const encodedFilename = encodeURIComponent(file.filename);
+    const contentLength = file.size ?? 0;
 
     res.set({
-      'Content-Type': file.mimetype || 'application/octet-stream',
-      'Content-Disposition': `attachment; filename="${encodeURIComponent(file.filename)}"`,
-      'Content-Length': file.size || 0,
+      'Content-Type': contentType,
+      'Content-Disposition': `attachment; filename="${encodedFilename}"`,
+      'Content-Length': contentLength,
     });
 
     return new StreamableFile(stream);
