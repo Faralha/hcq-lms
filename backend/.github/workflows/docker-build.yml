@@ -1,15 +1,9 @@
-name: Build and Push Docker Image, and Deploy to Server
+name: Build and Deploy (main only)
 
 on:
-  workflow_run:
-    workflows: ['CI']
-    types:
-      - completed
+  push:
     branches:
       - main
-  push:
-    tags:
-      - 'v*.*.*'
   workflow_dispatch:
 
 env:
@@ -19,8 +13,8 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    # Only run if CI workflow succeeded (or if triggered by tag or manual)
-    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    # Only run on allowed events (push to main or manual dispatch)
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
     permissions:
       contents: read
       packages: write
@@ -58,7 +52,7 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          push: ${{ github.event_name != 'pull_request' }}
+          push: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
@@ -68,7 +62,7 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    if: ${{ needs.build-and-push.result == 'success' && ((github.event_name == 'push' && github.ref == 'refs/heads/main') || github.event_name == 'workflow_dispatch') }}
     steps:
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1

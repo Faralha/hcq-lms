@@ -201,7 +201,11 @@ export class NilaiService {
 
   // ==================== NILAI ====================
 
-  async entryNilai(entryNilaiDto: EntryNilaiDto, pengajarId: string) {
+  async entryNilai(
+    entryNilaiDto: EntryNilaiDto,
+    pengajarId: string,
+    requesterRole?: Role,
+  ) {
     // Validate komponen exists
     const komponen = await this.prisma.komponenNilai.findUnique({
       where: { id: entryNilaiDto.komponenId },
@@ -220,8 +224,8 @@ export class NilaiService {
       );
     }
 
-    // Validate pengajar is creator of komponen
-    if (komponen.createdBy !== pengajarId) {
+    // Validate pengajar is creator of komponen, unless ADMIN
+    if (requesterRole !== Role.ADMIN && komponen.createdBy !== pengajarId) {
       throw new ForbiddenException(
         'You can only entry nilai for komponen that you created',
       );
@@ -298,6 +302,7 @@ export class NilaiService {
     id: string,
     updateNilaiDto: UpdateNilaiDto,
     pengajarId: string,
+    requesterRole?: Role,
   ) {
     const nilai = await this.prisma.nilai.findUnique({
       where: { id },
@@ -310,8 +315,11 @@ export class NilaiService {
       throw new NotFoundException(`Nilai with ID ${id} not found`);
     }
 
-    // Validate pengajar is creator of komponen
-    if (nilai.komponen.createdBy !== pengajarId) {
+    // Validate pengajar is creator of komponen, unless ADMIN
+    if (
+      requesterRole !== Role.ADMIN &&
+      nilai.komponen.createdBy !== pengajarId
+    ) {
       throw new ForbiddenException(
         'You can only update nilai for komponen that you created',
       );
@@ -333,27 +341,31 @@ export class NilaiService {
     });
   }
 
-  async getNilaiByKelas(kelasId: string, pengajarId: string) {
-    // Validate kelas exists and pengajar is assigned
+  async getNilaiByKelas(
+    kelasId: string,
+    pengajarId: string,
+    requesterRole?: Role,
+  ) {
+    // Validate kelas exists
     const kelas = await this.prisma.kelas.findUnique({
       where: { id: kelasId },
-      include: {
-        enrollments: {
-          where: {
-            userId: pengajarId,
-          },
-        },
-      },
     });
 
     if (!kelas) {
       throw new NotFoundException(`Kelas with ID ${kelasId} not found`);
     }
 
-    if (kelas.enrollments.length === 0) {
-      throw new ForbiddenException(
-        'You are not assigned as pengajar for this kelas',
-      );
+    // If not ADMIN, validate pengajar is assigned
+    if (requesterRole !== Role.ADMIN) {
+      const enrollment = await this.prisma.enrollment.findFirst({
+        where: { kelasId, userId: pengajarId },
+      });
+
+      if (!enrollment) {
+        throw new ForbiddenException(
+          'You are not assigned as pengajar for this kelas',
+        );
+      }
     }
 
     // Get all komponen nilai for this kelas
@@ -429,7 +441,7 @@ export class NilaiService {
     return Object.values(groupedByKelas);
   }
 
-  async deleteNilai(id: string, pengajarId: string) {
+  async deleteNilai(id: string, pengajarId: string, requesterRole?: Role) {
     const nilai = await this.prisma.nilai.findUnique({
       where: { id },
       include: {
@@ -441,8 +453,11 @@ export class NilaiService {
       throw new NotFoundException(`Nilai with ID ${id} not found`);
     }
 
-    // Validate pengajar is creator of komponen
-    if (nilai.komponen.createdBy !== pengajarId) {
+    // Validate pengajar is creator of komponen, unless ADMIN
+    if (
+      requesterRole !== Role.ADMIN &&
+      nilai.komponen.createdBy !== pengajarId
+    ) {
       throw new ForbiddenException(
         'You can only delete nilai for komponen that you created',
       );

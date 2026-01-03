@@ -23,41 +23,59 @@ export class AcademicRemarkController {
   constructor(private readonly academicRemarkService: AcademicRemarkService) {}
 
   @Post()
-  @Roles(Role.PENGAJAR)
+  @Roles(Role.PENGAJAR, Role.ADMIN)
   create(@Body() createDto: CreateAcademicRemarkDto, @Req() req: Request) {
-    return this.academicRemarkService.create(createDto, req.user!.sub);
+    return this.academicRemarkService.create(
+      createDto,
+      req.user!.sub,
+      req.user!.role as Role,
+    );
   }
 
   @Get('kelas/:kelasId')
   @Roles(Role.PENGAJAR, Role.ADMIN)
   findByKelas(@Param('kelasId') kelasId: string, @Req() req: Request) {
-    return this.academicRemarkService.findByKelas(kelasId, req.user!.sub);
+    return this.academicRemarkService.findByKelas(
+      kelasId,
+      req.user!.sub,
+      req.user!.role as Role,
+    );
   }
 
   @Get('saya')
-  @Roles(Role.PELAJAR)
+  @Roles(Role.PELAJAR, Role.ADMIN)
   findMyRemarks(@Req() req: Request) {
     return this.academicRemarkService.findMyRemarks(req.user!.sub);
   }
 
   @Get(':id')
+  @Roles(Role.PELAJAR, Role.PENGAJAR, Role.ADMIN)
   findOne(@Param('id') id: string) {
     return this.academicRemarkService.findOne(id);
   }
 
   @Patch(':id')
-  @Roles(Role.PENGAJAR)
+  @Roles(Role.PENGAJAR, Role.ADMIN)
   update(
     @Param('id') id: string,
     @Body() updateDto: UpdateAcademicRemarkDto,
     @Req() req: Request,
   ) {
-    return this.academicRemarkService.update(id, updateDto, req.user!.sub);
+    return this.academicRemarkService.update(
+      id,
+      updateDto,
+      req.user!.sub,
+      req.user!.role as Role,
+    );
   }
 
   @Delete(':id')
-  @Roles(Role.PENGAJAR)
+  @Roles(Role.PENGAJAR, Role.ADMIN)
   remove(@Param('id') id: string, @Req() req: Request) {
-    return this.academicRemarkService.remove(id, req.user!.sub);
+    return this.academicRemarkService.remove(
+      id,
+      req.user!.sub,
+      req.user!.role as Role,
+    );
   }
 }

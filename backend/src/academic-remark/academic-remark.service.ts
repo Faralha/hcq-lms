@@ -12,7 +12,13 @@ import { CreateAcademicRemarkDto, UpdateAcademicRemarkDto } from './dto';
 export class AcademicRemarkService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateAcademicRemarkDto, creatorId: string) {
+  async create(
+    dto: CreateAcademicRemarkDto,
+    creatorId: string,
+    creatorRole: Role,
+  ) {
+    const isAdmin = creatorRole === Role.ADMIN;
+
     // Validate kelas exists
     const kelas = await this.prisma.kelas.findUnique({
       where: { id: dto.kelasId },
@@ -33,7 +39,7 @@ export class AcademicRemarkService {
       (e) => e.userId === creatorId && e.user.role === Role.PENGAJAR,
     );
 
-    if (!enrollment) {
+    if (!isAdmin && !enrollment) {
       throw new ForbiddenException(
         'You are not assigned as pengajar for this kelas',
       );
@@ -115,7 +121,9 @@ export class AcademicRemarkService {
     });
   }
 
-  async findByKelas(kelasId: string, userId: string) {
+  async findByKelas(kelasId: string, userId: string, userRole: Role) {
+    const isAdmin = userRole === Role.ADMIN;
+
     // Validate kelas exists
     const kelas = await this.prisma.kelas.findUnique({
       where: { id: kelasId },
@@ -131,7 +139,7 @@ export class AcademicRemarkService {
     }
 
     // Validate user is enrolled in kelas
-    if (kelas.enrollments.length === 0) {
+    if (!isAdmin && kelas.enrollments.length === 0) {
       throw new ForbiddenException('You are not enrolled in this kelas');
     }
 
@@ -216,7 +224,14 @@ export class AcademicRemarkService {
     return remark;
   }
 
-  async update(id: string, dto: UpdateAcademicRemarkDto, pengajarId: string) {
+  async update(
+    id: string,
+    dto: UpdateAcademicRemarkDto,
+    pengajarId: string,
+    pengajarRole: Role,
+  ) {
+    const isAdmin = pengajarRole === Role.ADMIN;
+
     const remark = await this.prisma.academicRemark.findUnique({
       where: { id },
       include: {
@@ -240,7 +255,7 @@ export class AcademicRemarkService {
       (e) => e.userId === pengajarId && e.user.role === Role.PENGAJAR,
     );
 
-    if (!enrollment) {
+    if (!isAdmin && !enrollment) {
       throw new ForbiddenException(
         'You are not assigned as pengajar for this kelas',
       );
@@ -274,7 +289,9 @@ export class AcademicRemarkService {
     });
   }
 
-  async remove(id: string, pengajarId: string) {
+  async remove(id: string, pengajarId: string, pengajarRole: Role) {
+    const isAdmin = pengajarRole === Role.ADMIN;
+
     const remark = await this.prisma.academicRemark.findUnique({
       where: { id },
       include: {
@@ -298,7 +315,7 @@ export class AcademicRemarkService {
       (e) => e.userId === pengajarId && e.user.role === Role.PENGAJAR,
     );
 
-    if (!enrollment) {
+    if (!isAdmin && !enrollment) {
       throw new ForbiddenException(
         'You are not assigned as pengajar for this kelas',
       );

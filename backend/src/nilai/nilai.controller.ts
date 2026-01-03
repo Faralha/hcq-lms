@@ -27,15 +27,21 @@ import type { Request } from 'express';
 export class NilaiController {
   constructor(private readonly nilaiService: NilaiService) {}
 
+  private getAuthUser(req: Request): { userId: string; role: Role } {
+    const user = req.user as { sub: string; role: Role } | undefined;
+    return { userId: user!.sub, role: user!.role };
+  }
+
   // ==================== KOMPONEN NILAI ====================
 
   @Post('komponen')
-  @Roles(Role.PENGAJAR)
+  @Roles(Role.PENGAJAR, Role.ADMIN)
   createKomponen(
     @Body() createKomponenDto: CreateKomponenNilaiDto,
     @Req() req: Request,
   ) {
-    return this.nilaiService.createKomponen(createKomponenDto, req.user!.sub);
+    const { userId } = this.getAuthUser(req);
+    return this.nilaiService.createKomponen(createKomponenDto, userId);
   }
 
   @Get('komponen/kelas/:kelasId')
@@ -49,58 +55,61 @@ export class NilaiController {
   }
 
   @Patch('komponen/:id')
-  @Roles(Role.PENGAJAR)
+  @Roles(Role.PENGAJAR, Role.ADMIN)
   updateKomponen(
     @Param('id') id: string,
     @Body() updateKomponenDto: UpdateKomponenNilaiDto,
     @Req() req: Request,
   ) {
-    return this.nilaiService.updateKomponen(
-      id,
-      updateKomponenDto,
-      req.user!.sub,
-    );
+    const { userId } = this.getAuthUser(req);
+    return this.nilaiService.updateKomponen(id, updateKomponenDto, userId);
   }
 
   @Delete('komponen/:id')
-  @Roles(Role.PENGAJAR)
+  @Roles(Role.PENGAJAR, Role.ADMIN)
   deleteKomponen(@Param('id') id: string, @Req() req: Request) {
-    return this.nilaiService.deleteKomponen(id, req.user!.sub);
+    const { userId } = this.getAuthUser(req);
+    return this.nilaiService.deleteKomponen(id, userId);
   }
 
   // ==================== NILAI ====================
 
   @Post('entry')
-  @Roles(Role.PENGAJAR)
+  @Roles(Role.PENGAJAR, Role.ADMIN)
   entryNilai(@Body() entryNilaiDto: EntryNilaiDto, @Req() req: Request) {
-    return this.nilaiService.entryNilai(entryNilaiDto, req.user!.sub);
+    const { userId, role } = this.getAuthUser(req);
+    return this.nilaiService.entryNilai(entryNilaiDto, userId, role);
   }
 
   @Patch(':id')
-  @Roles(Role.PENGAJAR)
+  @Roles(Role.PENGAJAR, Role.ADMIN)
   updateNilai(
     @Param('id') id: string,
     @Body() updateNilaiDto: UpdateNilaiDto,
     @Req() req: Request,
   ) {
-    return this.nilaiService.updateNilai(id, updateNilaiDto, req.user!.sub);
+    const { userId, role } = this.getAuthUser(req);
+    return this.nilaiService.updateNilai(id, updateNilaiDto, userId, role);
   }
 
   @Get('kelas/:kelasId')
   @Roles(Role.PENGAJAR, Role.ADMIN)
   getNilaiByKelas(@Param('kelasId') kelasId: string, @Req() req: Request) {
-    return this.nilaiService.getNilaiByKelas(kelasId, req.user!.sub);
+    const { userId, role } = this.getAuthUser(req);
+    return this.nilaiService.getNilaiByKelas(kelasId, userId, role);
   }
 
   @Get('saya')
   @Roles(Role.PELAJAR)
   getMyNilai(@Req() req: Request) {
-    return this.nilaiService.getMyNilai(req.user!.sub);
+    const { userId } = this.getAuthUser(req);
+    return this.nilaiService.getMyNilai(userId);
   }
 
   @Delete(':id')
-  @Roles(Role.PENGAJAR)
+  @Roles(Role.PENGAJAR, Role.ADMIN)
   deleteNilai(@Param('id') id: string, @Req() req: Request) {
-    return this.nilaiService.deleteNilai(id, req.user!.sub);
+    const { userId, role } = this.getAuthUser(req);
+    return this.nilaiService.deleteNilai(id, userId, role);
   }
 }
