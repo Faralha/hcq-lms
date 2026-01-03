@@ -5,13 +5,13 @@
     <UTable ref="sessionsTable" v-model:pagination="sessionsPagination" :data="presensiSessions"
       :columns="sessionsColumns" :loading="isLoadingSessions"
       :empty="presensiSessions.length === 0 ? 'Belum ada sesi presensi. Mulai sesi presensi untuk mencatat kehadiran pelajar.' : undefined"
-      :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }"
+      :pagination-options="{ getPaginationRowModel: getPaginationRowModel() }" size="md"
       class="border border-accented rounded-lg overflow-hidden" />
 
     <div v-if="presensiSessions.length > 0" class="flex justify-end">
       <UPagination :page="(sessionsTable?.tableApi?.getState().pagination.pageIndex || 0) + 1"
         :items-per-page="sessionsTable?.tableApi?.getState().pagination.pageSize || 5"
-        :total="sessionsTable?.tableApi?.getFilteredRowModel().rows.length || 0"
+        :total="sessionsTable?.tableApi?.getFilteredRowModel().rows.length || 0" size="md"
         @update:page="(p) => sessionsTable?.tableApi?.setPageIndex(p - 1)" />
     </div>
 
@@ -39,7 +39,7 @@
               <div class="flex items-center justify-between mb-2">
                 <p class="text-sm font-medium text-[--ui-text-muted]">Status Sesi</p>
                 <UBadge :label="selectedSession?.isActive ? 'Aktif' : 'Selesai'"
-                  :color="selectedSession?.isActive ? 'success' : 'neutral'" variant="subtle" />
+                  :color="selectedSession?.isActive ? 'success' : 'neutral'" variant="subtle" size="md" />
               </div>
               <div class="flex items-center gap-2">
                 <p class="text-sm font-medium text-[--ui-text-muted]">Kode Presensi:</p>
@@ -55,11 +55,11 @@
             <!-- Table Presensi -->
             <div v-else class="flex flex-col border border-accented rounded-lg overflow-hidden">
               <UTable :key="presensiRecords.map(r => `${r.id}-${r.status}`).join('-')" :data="presensiRecords"
-                :columns="presensiColumns" class="flex-1" />
+                :columns="presensiColumns" size="md" class="flex-1" />
             </div>
 
             <div class="w-full flex flex-col items-center gap-3 pt-4">
-              <UButton class="w-full justify-center" label="Tutup" color="neutral" variant="outline"
+              <UButton class="w-full justify-center" label="Tutup" color="neutral" variant="outline" size="lg"
                 @click="isModalOpen = false" />
             </div>
           </div>
@@ -156,29 +156,31 @@ const sessionsColumns: TableColumn<PresensiSession>[] = [
       return h(UBadge, {
         label: isActive ? 'Aktif' : 'Selesai',
         color: isActive ? 'success' : 'neutral',
-        variant: 'subtle'
+        variant: 'subtle',
+        size: 'md'
       })
     }
   },
-  {
-    id: 'attendance',
-    header: 'Jumlah Hadir',
-    cell: ({ row }) => {
-      const records = row.original.records || []
-      const hadirCount = records.filter(r => r.status === 'HADIR').length
-      const totalCount = records.length
-      return h('span', { class: 'font-medium' }, `${hadirCount}/${totalCount}`)
-    }
-  },
+  // {
+  //   id: 'attendance',
+  //   header: 'Jumlah Hadir',
+  //   cell: ({ row }) => {
+  //     const records = row.original.records || []
+  //     const hadirCount = records.filter(r => r.status === 'HADIR').length
+  //     const totalCount = records.length
+  //     return h('span', { class: 'font-medium' }, `${hadirCount}/${totalCount}`)
+  //   }
+  // },
   {
     id: 'actions',
     header: 'Aksi',
     cell: ({ row }) => {
       return h(UButton, {
+        icon: 'i-lucide-edit',
         label: 'Edit',
-        size: 'xs',
-        color: 'primary',
-        variant: 'outline',
+        size: 'md',
+        color: 'secondary',
+        variant: 'solid',
         onClick: () => handleEditPresensi(row.original.id)
       })
     }
@@ -212,15 +214,18 @@ const presensiColumns: TableColumn<PresensiRecord>[] = [
       return h(UBadge, {
         label: status,
         variant: 'subtle',
-        color
+        color,
+        size: 'md'
       }, () => status.toLowerCase())
     }
   },
   {
-    accessorKey: 'timestamp',
+    accessorKey: 'updatedAt',
     header: 'Waktu',
     cell: ({ row }) => {
-      return new Date(row.getValue('timestamp')).toLocaleTimeString('id-ID', {
+      const updatedAt = row.getValue('updatedAt') as string
+      if (!updatedAt) return '-'
+      return new Date(updatedAt).toLocaleTimeString('id-ID', {
         hour: '2-digit',
         minute: '2-digit'
       })
@@ -235,7 +240,7 @@ const presensiColumns: TableColumn<PresensiRecord>[] = [
         items: statusOptions,
         valueKey: 'value',
         placeholder: 'Pilih status',
-        size: 'sm',
+        size: 'lg',
         class: 'w-32',
         'onUpdate:modelValue': async (value: string) => {
           // Update local state immediately for instant UI feedback

@@ -119,6 +119,18 @@ export const usePresensiApi = () => {
   };
 
   /**
+   * Get riwayat presensi by Kelas (Pelajar)
+   * GET /presensi/riwayat/:kelasId
+   */
+  const getRiwayatPresensiByKelas = async (
+    kelasId: string
+  ): Promise<
+    ApiResponse<PresensiRecord[]>
+  > => {
+    return api.get(`presensi/riwayat/${kelasId}`);
+  };
+
+  /**
    * Get presensi sessions by kelas (Pengajar/Admin)
    * GET /presensi/kelas/:kelasId
    * Returns all presensi sessions with their records for a specific kelas
@@ -136,6 +148,7 @@ export const usePresensiApi = () => {
     manualPresensi,
     getPresensiBySession,
     getRiwayatPresensi,
+    getRiwayatPresensiByKelas,
     getPresensiByKelas,
   };
 };

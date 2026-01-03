@@ -80,7 +80,7 @@ const props = defineProps<{
 const toast = useToast()
 
 // Composables
-const { hadirDenganKode, getRiwayatPresensi } = usePresensiApi()
+const { hadirDenganKode, getRiwayatPresensiByKelas } = usePresensiApi()
 
 // State
 const presensiCode = ref('')
@@ -187,10 +187,9 @@ async function handleSubmitPresensi() {
 async function fetchPresensiHistory() {
   try {
     isLoadingHistory.value = true
-    const response = await getRiwayatPresensi()
+    const response = await getRiwayatPresensiByKelas(props.kelasId)
 
-    // Note: getRiwayatPresensi returns presensi for current user
-    // We'll show all records for now (backend should filter by user)
+    // Response already filtered by kelas; keep existing table shape
     presensiHistory.value = response.data || []
   } catch (error: any) {
     console.error('Error fetching presensi history:', error)
