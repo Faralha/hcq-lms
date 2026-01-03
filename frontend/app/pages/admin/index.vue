@@ -112,8 +112,8 @@ const menuItems: MenuItem[] = [
     to: '/admin/semester'
   },
   {
-    label: 'Mata Pelajaran',
-    description: 'Atur Mata Pelajaran',
+    label: 'Program',
+    description: 'Atur Program',
     icon: 'i-lucide-book',
     to: '/admin/mata-pelajaran'
   },

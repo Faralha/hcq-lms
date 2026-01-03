@@ -106,7 +106,8 @@
             </div>
 
             <div class="w-full">
-              <UButton label="Selesai" color="secondary" variant="outline" size="lg" @click="closeEnrollModal" class="justify-center w-full" />
+              <UButton label="Selesai" color="secondary" variant="outline" size="lg" @click="closeEnrollModal"
+                class="justify-center w-full" />
             </div>
           </div>
         </UCard>
@@ -226,17 +227,29 @@ const mataPelajaranOptions = computed(() =>
   mataPelajaranList.value.map(mp => ({ label: `${mp.kode} - ${mp.nama}`, value: mp.id }))
 )
 
-const pelajarOptions = computed(() =>
-  users.value
-    .filter(u => u.role === 'PELAJAR')
-    .map(u => ({ label: u.nama, value: u.id }))
-)
+const pelajarOptions = computed(() => {
+  const enrolledPelajarIds = new Set(
+    (selectedKelas.value?.enrollments || [])
+      .filter(e => e.user.role === 'PELAJAR')
+      .map(e => e.user.id)
+  )
 
-const pengajarOptions = computed(() =>
-  users.value
-    .filter(u => u.role === 'PENGAJAR')
+  return users.value
+    .filter(u => u.role === 'PELAJAR' && !enrolledPelajarIds.has(u.id))
     .map(u => ({ label: u.nama, value: u.id }))
-)
+})
+
+const pengajarOptions = computed(() => {
+  const enrolledPengajarIds = new Set(
+    (selectedKelas.value?.enrollments || [])
+      .filter(e => e.user.role === 'PENGAJAR')
+      .map(e => e.user.id)
+  )
+
+  return users.value
+    .filter(u => u.role === 'PENGAJAR' && !enrolledPengajarIds.has(u.id))
+    .map(u => ({ label: u.nama, value: u.id }))
+})
 
 // Table Columns
 const columns: TableColumn<KelasType>[] = [

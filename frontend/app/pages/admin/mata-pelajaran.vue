@@ -3,19 +3,19 @@
     <!-- Greetings/Header -->
     <div>
       <p class="text-lg font-medium text-[--ui-text-muted]">Manajemen</p>
-      <h1 class="text-3xl font-bold">Atur Mata Pelajaran</h1>
+      <h1 class="text-3xl font-bold">Atur Program</h1>
     </div>
 
     <!-- Tambah Mata Pelajaran Modal -->
     <UModal v-model:open="isModalOpen">
-      <UButton label="Tambah Mata Pelajaran" icon="i-lucide-book-plus" @click="openCreateModal" />
+      <UButton label="Tambah Program" icon="i-lucide-book-plus" @click="openCreateModal" />
 
       <template #content>
         <UCard>
-          <h3 class="text-lg font-semibold mb-4">{{ isEditing ? 'Edit' : 'Tambah' }} Mata Pelajaran</h3>
+          <h3 class="text-lg font-semibold mb-4">{{ isEditing ? 'Edit' : 'Tambah' }} Program</h3>
 
           <UForm :schema="schema" :state="form" @submit="onSubmit" class="space-y-4 w-full">
-            <UFormField label="Nama Mata Pelajaran" name="nama" required>
+            <UFormField label="Nama Program" name="nama" required>
               <UInput class="inputStyle" v-model="form.nama" placeholder="Tahfidz Qur'an" />
             </UFormField>
 
@@ -60,7 +60,7 @@
 
       <!-- Footer Info -->
       <div class="px-4 py-3.5 border-t border-accented text-sm text-[--ui-text-muted]">
-        {{ filteredCount }} mata pelajaran ditemukan
+        {{ filteredCount }} program ditemukan
       </div>
     </div>
   </div>
@@ -107,7 +107,7 @@ const isSubmitting = ref(false)
 
 const schema = z.object({
   id: z.string().optional(),
-  nama: z.string().min(1, 'Nama mata pelajaran wajib diisi'),
+  nama: z.string().min(1, 'Nama program wajib diisi'),
   kode: z.string().min(1, 'Kode wajib diisi'),
   deskripsi: z.string().optional()
 })
@@ -141,7 +141,7 @@ const columns: TableColumn<MataPelajaran>[] = [
   },
   {
     accessorKey: 'nama',
-    header: 'Nama Mata Pelajaran',
+    header: 'Nama Program',
     cell: ({ row }) => {
       return h('p', { class: 'font-medium' }, row.getValue('nama'))
     }
@@ -164,7 +164,7 @@ const columns: TableColumn<MataPelajaran>[] = [
           label: 'Actions'
         },
         {
-          label: 'Edit Mata Pelajaran',
+          label: 'Edit Program',
           icon: 'i-lucide-edit',
           onSelect: () => handleEdit(row.original)
         },
@@ -172,7 +172,7 @@ const columns: TableColumn<MataPelajaran>[] = [
           type: 'separator' as const
         },
         {
-          label: 'Delete Mata Pelajaran',
+          label: 'Delete Program',
           icon: 'i-lucide-trash',
           color: 'error' as const,
           onSelect: () => handleDelete(row.original)
@@ -205,8 +205,8 @@ async function fetchMataPelajaran() {
   } catch (error: any) {
     console.error('[MATA PELAJARAN] Error:', error)
     toast.add({
-      title: 'Error loading mata pelajaran',
-      description: error.message || 'Failed to fetch mata pelajaran',
+      title: 'Error loading program',
+      description: error.message || 'Failed to fetch program',
       color: 'error',
       icon: 'i-lucide-alert-circle'
     })
@@ -257,10 +257,10 @@ async function onSubmit() {
       response = await createMataPelajaran(payload)
     }
 
-    if (response.status !== 200 && response.status !== 201) throw new Error('Failed to save mata pelajaran')
+    if (response.status !== 200 && response.status !== 201) throw new Error('Failed to save program')
 
     toast.add({
-      title: `Mata pelajaran ${isEditing.value ? 'updated' : 'created'} successfully`,
+      title: `Program ${isEditing.value ? 'updated' : 'created'} successfully`,
       color: 'success',
       icon: 'i-lucide-check-circle'
     })
@@ -269,7 +269,7 @@ async function onSubmit() {
     await fetchMataPelajaran()
   } catch (error: any) {
     toast.add({
-      title: `Error ${isEditing.value ? 'updating' : 'creating'} mata pelajaran`,
+      title: `Error ${isEditing.value ? 'updating' : 'creating'} program`,
       description: error.message,
       color: 'error',
       icon: 'i-lucide-alert-circle'
@@ -280,15 +280,15 @@ async function onSubmit() {
 }
 
 async function handleDelete(mp: MataPelajaran) {
-  const confirmed = confirm(`Yakin ingin menghapus mata pelajaran ${mp.nama}?`)
+  const confirmed = confirm(`Yakin ingin menghapus program ${mp.nama}?`)
   if (!confirmed) return
 
   try {
     const response = await deleteMataPelajaran(mp.id)
-    if (response.status !== 200) throw new Error('Failed to delete mata pelajaran')
+    if (response.status !== 200) throw new Error('Failed to delete program')
 
     toast.add({
-      title: 'Mata pelajaran deleted successfully',
+      title: 'Program deleted successfully',
       color: 'success',
       icon: 'i-lucide-check-circle'
     })
@@ -296,7 +296,7 @@ async function handleDelete(mp: MataPelajaran) {
     mataPelajaran.value = mataPelajaran.value.filter(m => m.id !== mp.id)
   } catch (error: any) {
     toast.add({
-      title: 'Error deleting mata pelajaran',
+      title: 'Error deleting program',
       description: error.message,
       color: 'error',
       icon: 'i-lucide-alert-circle'

@@ -8,7 +8,6 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   ssr: true,
-
   routeRules: {
 
     // Disable SSR as base
@@ -19,6 +18,11 @@ export default defineNuxtConfig({
 
     // Also enable for About
     '/about': { ssr: true },
+  },
+
+  // Define default color theme
+  colorMode: {
+    preference: 'light',
   },
 
   app: {
