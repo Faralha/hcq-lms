@@ -58,10 +58,26 @@ export class PresensiController {
     return this.presensiService.getRiwayatPresensi(req.user!.sub);
   }
 
+  @Get('riwayat/:kelasId')
+  @Roles(Role.PELAJAR)
+  getRiwayatPresensiByKelas(
+    @Param('kelasId') kelasId: string,
+    @Req() req: Request,
+  ) {
+    return this.presensiService.getRiwayatPresensiByKelas(
+      req.user!.sub,
+      kelasId,
+    );
+  }
+
   @Get('kelas/:id')
   @Roles(Role.PENGAJAR, Role.ADMIN)
-  getPresensiByKelas(@Param('id') id: string) {
-    return this.presensiService.getPresensiByKelas(id);
+  getPresensiByKelas(@Param('id') id: string, @Req() req: Request) {
+    return this.presensiService.getPresensiByKelas(
+      id,
+      req.user!.sub,
+      req.user!.role as Role,
+    );
   }
 
   @Post('session/:id/stop')

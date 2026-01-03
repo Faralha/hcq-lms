@@ -533,11 +533,11 @@ Authorization: Bearer <admin-token>
 
 **Status Options:**
 
-| Status      | Description                               |
-| ----------- | ----------------------------------------- |
-| `PENDING`   | Invitation is valid and waiting for use   |
-| `EXPIRED`   | Invitation has expired (past expiresAt)   |
-| `USED`      | Invitation has been used for registration |
+| Status    | Description                               |
+| --------- | ----------------------------------------- |
+| `PENDING` | Invitation is valid and waiting for use   |
+| `EXPIRED` | Invitation has expired (past expiresAt)   |
+| `USED`    | Invitation has been used for registration |
 
 ### Get Invitation by ID (Admin Only)
 
@@ -645,7 +645,6 @@ Authorization: Bearer <admin-token>
   "message": "Cannot resend: invitation already used"
 }
 ```
-
 
 ### Get Current User
 
@@ -1239,31 +1238,75 @@ Authorization: Bearer <pelajar-token>
 
 **Response:**
 
+````json
+[
+  {
+
+#### Get Riwayat Presensi by Kelas (Pelajar/Pengajar/Admin)
+
+```http
+GET /presensi/riwayat/:kelasid
+Authorization: Bearer <token>
+````
+
+**Description:** Mengambil riwayat presensi untuk sebuah `kelas` berdasarkan `kelasid`.
+
+**Path Parameters:**
+
+- `kelasid` (string, required): UUID dari kelas.
+
+**Response (200 OK):**
+
 ```json
 [
   {
-    "id": "uuid",
-    "status": "HADIR",
-    "timestamp": "2025-11-06T10:05:00.000Z",
-    "presensiSession": {
-      "tanggal": "2025-11-06T10:00:00.000Z",
-      "kelas": {
-        "namaKelas": "Tahsin - Kelas Pagi",
-        "mataPelajaran": {
-          "nama": "Tahsin"
-        }
+    "userId": "pelajar-uuid",
+    "nama": "Muhammad Ali",
+    "presensi": [
+      {
+        "sessionId": "uuid",
+        "tanggal": "2025-11-06T10:00:00.000Z",
+        "status": "HADIR"
+      },
+      {
+        "sessionId": "uuid-2",
+        "tanggal": "2025-11-04T10:00:00.000Z",
+        "status": "ALFA"
       }
-    }
+    ]
   }
 ]
 ```
+
+**Notes:**
+
+- Hanya `PENGAJAR` yang ditugaskan ke kelas, `ADMIN`, atau `PELAJAR` yang terdaftar di kelas dapat mengakses endpoint ini sesuai aturan otorisasi.
+- Berguna untuk menghasilkan laporan presensi per kelas atau menampilkan riwayat ke pengguna terkait.
+
+      "id": "uuid",
+      "status": "HADIR",
+      "timestamp": "2025-11-06T10:05:00.000Z",
+      "presensiSession": {
+        "tanggal": "2025-11-06T10:00:00.000Z",
+        "kelas": {
+          "namaKelas": "Tahsin - Kelas Pagi",
+          "mataPelajaran": {
+            "nama": "Tahsin"
+          }
+        }
+      }
+
+  }
+  ]
+
+````
 
 #### Get All Presensi Sessions by Kelas (Pengajar/Admin)
 
 ```http
 GET /presensi/kelas/:kelasId
 Authorization: Bearer <token>
-```
+````
 
 **Description:** Get all presensi sessions and records for a specific kelas.
 

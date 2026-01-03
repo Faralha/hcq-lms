@@ -327,7 +327,59 @@ export class PresensiService {
     return records;
   }
 
-  async getPresensiByKelas(kelasId: string) {
+  async getRiwayatPresensiByKelas(userId: string, kelasId: string) {
+    // Validate kelas exists
+    const kelas = await this.prisma.kelas.findUnique({
+      where: { id: kelasId },
+    });
+
+    if (!kelas) {
+      throw new NotFoundException(`Kelas with ID ${kelasId} not found`);
+    }
+
+    // Validate pelajar is enrolled in this kelas
+    const enrollment = await this.prisma.enrollment.findUnique({
+      where: {
+        userId_kelasId: {
+          userId,
+          kelasId,
+        },
+      },
+    });
+
+    if (!enrollment) {
+      throw new ForbiddenException('You are not enrolled in this kelas');
+    }
+
+    // Get presensi records filtered by kelas
+    const records = await this.prisma.presensiRecord.findMany({
+      where: {
+        userId,
+        presensiSession: {
+          kelasId,
+        },
+      },
+      include: {
+        presensiSession: {
+          include: {
+            kelas: {
+              include: {
+                semester: true,
+                mataPelajaran: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return records;
+  }
+
+  async getPresensiByKelas(kelasId: string, userId: string, userRole: Role) {
     // Validate kelas exists
     const kelas = await this.prisma.kelas.findUnique({
       where: { id: kelasId },
@@ -339,6 +391,22 @@ export class PresensiService {
 
     if (!kelas) {
       throw new NotFoundException(`Kelas with ID ${kelasId} not found`);
+    }
+
+    // For PELAJAR and PENGAJAR, check if they are enrolled in this kelas
+    if (userRole !== Role.ADMIN) {
+      const enrollment = await this.prisma.enrollment.findUnique({
+        where: {
+          userId_kelasId: {
+            userId,
+            kelasId,
+          },
+        },
+      });
+
+      if (!enrollment) {
+        throw new ForbiddenException('You are not enrolled in this kelas');
+      }
     }
 
     // Get all presensi sessions for this kelas
