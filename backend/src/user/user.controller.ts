@@ -12,7 +12,7 @@ import { UserService } from './user.service';
 import { CreateUserDto, UpdateUserDto } from './dto';
 import { JwtAuthGuard } from '../auth/guards';
 import { RolesGuard } from '../auth/guards';
-import { Roles } from '../auth/decorators';
+import { Roles, CurrentUser } from '../auth/decorators';
 
 @Controller('users')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -23,6 +23,11 @@ export class UserController {
   @Roles('ADMIN')
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
+  }
+
+  @Get('me')
+  getMe(@CurrentUser() user: Express.User) {
+    return this.userService.getMe(user.sub);
   }
 
   @Get()
