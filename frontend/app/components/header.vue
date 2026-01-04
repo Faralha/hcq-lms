@@ -82,10 +82,6 @@ const items = computed<NavigationMenuItem[]>(() => {
       label: 'About',
       to: '/about',
       active: route.path === '/about'
-    },
-    {
-      label: 'Ubah Password',
-      to: '/auth/change-password',
     }
   ]
 
@@ -114,6 +110,21 @@ const items = computed<NavigationMenuItem[]>(() => {
       to: '/pelajar/help',
       active: route.path === '/pelajar/help'
     })
+  }
+
+  // Authenticated user menu
+  if (user.value) {
+    menu.push(
+      {
+        label: 'Ubah Password',
+        to: '/profile/change-password',
+      },
+      {
+        label: 'Profil Saya',
+        to: '/profile',
+        active: route.path === '/profile'
+      }
+    )
   }
 
   return menu

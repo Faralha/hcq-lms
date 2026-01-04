@@ -32,6 +32,14 @@ export const useUserApi = () => {
   const api = useApi();
 
   /**
+   * Get me detail
+   * GET /users/me
+   */
+  const getMe = async (): Promise<ApiResponse<User>> => {
+    return api.get<ApiResponse<User>>("users/me");
+  }
+
+  /**
    * Get all users (Admin only)
    * GET /users
    */
@@ -70,6 +78,7 @@ export const useUserApi = () => {
 
   return {
     getAllUsers,
+    getMe,
     createUser,
     updateUser,
     deleteUser,
