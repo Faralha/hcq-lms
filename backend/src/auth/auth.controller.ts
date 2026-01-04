@@ -15,7 +15,12 @@ import {
   Delete,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterPelajarDto, ChangePasswordDto } from './dto';
+import {
+  LoginDto,
+  RegisterPelajarDto,
+  ChangePasswordDto,
+  ResetPasswordDto,
+} from './dto';
 import { Roles, CurrentUser } from './decorators';
 import { JwtAuthGuard, RolesGuard } from './guards';
 import type { Response, Request } from 'express';
@@ -90,6 +95,40 @@ export class AuthController {
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
     return this.authService.changePassword(user.sub, changePasswordDto);
+  }
+
+  /*
+   * Request reset password link
+   * data: { email: string },
+   */
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body('email') email: string) {
+    return this.authService.forgotPassword(email);
+  }
+
+  /*
+   * Reset password using token
+   * data: { token: string; password: string, confirmPassword: string },
+   */
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Body() data: ResetPasswordDto) {
+    return this.authService.resetPassword(
+      data.token,
+      data.password,
+      data.confirmPassword,
+    );
+  }
+
+  /*
+   * Validate reset password token
+   * @param token - Reset password token from URL
+   */
+  @Get('reset-password/:token/validate')
+  @HttpCode(HttpStatus.OK)
+  async validateResetPasswordToken(@Param('token') token: string) {
+    return this.authService.validateResetPasswordToken(token);
   }
 
   @Post('refresh')

@@ -258,6 +258,12 @@ export class AuthService {
       },
     });
 
+    // Send password changed notification email
+    await this.emailService.sendPasswordChangedEmail(
+      user.email,
+      user.fullName || user.nama || user.email.split('@')[0],
+    );
+
     return {
       message: 'Password berhasil diubah',
     };
@@ -539,6 +545,150 @@ export class AuthService {
       message: 'Invitation resent successfully',
       email: updatedInvitation.email,
       expiresAt: updatedInvitation.expiresAt,
+    };
+  }
+
+  // ==================== Password Reset Methods ====================
+
+  async forgotPassword(email: string) {
+    // Find user by email
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    // Always return success message for security (don't expose if email exists)
+    if (!user) {
+      return {
+        message:
+          'Jika email terdaftar, link reset password telah dikirim ke email Anda',
+      };
+    }
+
+    // Generate random token
+    const token = crypto.randomBytes(32).toString('hex');
+
+    // Set expiration to 1 hour from now
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1);
+
+    // Delete any existing reset tokens for this email
+    await this.prisma.passwordResetToken.deleteMany({
+      where: { email },
+    });
+
+    // Create new reset token
+    await this.prisma.passwordResetToken.create({
+      data: {
+        email,
+        token,
+        expiresAt,
+      },
+    });
+
+    // Generate reset link
+    const resetLink = `${this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000'}/auth/reset-password?token=${token}`;
+
+    // Send email with reset link
+    await this.emailService.sendResetPasswordEmail(
+      email,
+      user.fullName || user.nama || email.split('@')[0],
+      resetLink,
+    );
+
+    return {
+      message:
+        'Jika email terdaftar, link reset password telah dikirim ke email Anda',
+    };
+  }
+
+  async validateResetPasswordToken(token: string) {
+    // Find reset token
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
+      where: { token },
+    });
+
+    if (!resetToken) {
+      throw new BadRequestException('Token reset password tidak valid');
+    }
+
+    if (resetToken.used) {
+      throw new BadRequestException('Token reset password sudah digunakan');
+    }
+
+    if (new Date() > resetToken.expiresAt) {
+      throw new BadRequestException('Token reset password sudah kadaluarsa');
+    }
+
+    return {
+      valid: true,
+      email: resetToken.email,
+      expiresAt: resetToken.expiresAt,
+    };
+  }
+
+  async resetPassword(
+    token: string,
+    password: string,
+    confirmPassword: string,
+  ) {
+    // Validate password match
+    if (password !== confirmPassword) {
+      throw new BadRequestException(
+        'Password dan konfirmasi password tidak sama',
+      );
+    }
+
+    // Find reset token
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
+      where: { token },
+    });
+
+    if (!resetToken) {
+      throw new BadRequestException('Token reset password tidak valid');
+    }
+
+    if (resetToken.used) {
+      throw new BadRequestException('Token reset password sudah digunakan');
+    }
+
+    if (new Date() > resetToken.expiresAt) {
+      throw new BadRequestException('Token reset password sudah kadaluarsa');
+    }
+
+    // Find user by email
+    const user = await this.prisma.user.findUnique({
+      where: { email: resetToken.email },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User tidak ditemukan');
+    }
+
+    // Hash new password
+    const hashedPassword = await argon2.hash(password);
+
+    // Update user password
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+      },
+    });
+
+    // Mark token as used
+    await this.prisma.passwordResetToken.update({
+      where: { token },
+      data: { used: true },
+    });
+
+    // Send password changed notification email
+    await this.emailService.sendPasswordChangedEmail(
+      user.email,
+      user.fullName || user.nama || user.email.split('@')[0],
+    );
+
+    return {
+      message: 'Password berhasil direset',
     };
   }
 }

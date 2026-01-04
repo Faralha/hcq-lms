@@ -71,6 +71,66 @@ export class EmailService {
   }
 
   /**
+   * Send password changed notification email
+   */
+  async sendPasswordChangedEmail(
+    to: string,
+    recipientName: string,
+  ): Promise<boolean> {
+    try {
+      const html = this.compilePasswordChangedTemplate(recipientName);
+
+      await this.mailerService.sendMail({
+        to,
+        subject: 'Password Akun Anda Telah Diubah - HCQ',
+        html,
+      });
+
+      this.logger.log(
+        `Password changed notification email sent successfully to ${to}`,
+      );
+      return true;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to send password changed email to ${to}: ${errorMessage}`,
+      );
+      // Don't throw error for notification emails - password change already succeeded
+      return false;
+    }
+  }
+
+  /**
+   * Send reset password email
+   */
+  async sendResetPasswordEmail(
+    to: string,
+    recipientName: string,
+    resetLink: string,
+  ): Promise<boolean> {
+    try {
+      const html = this.compileResetPasswordTemplate(recipientName, resetLink);
+
+      await this.mailerService.sendMail({
+        to,
+        subject: 'Reset Password - HCQ',
+        html,
+      });
+
+      this.logger.log(`Reset password email sent successfully to ${to}`);
+      return true;
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(
+        `Failed to send reset password email to ${to}: ${errorMessage}`,
+      );
+      throw new BadRequestException(`Failed to send email: ${errorMessage}`);
+    }
+  }
+
+  /**
    * Compile magic link MJML template
    */
   private compileMagicLinkTemplate(
@@ -107,6 +167,60 @@ export class EmailService {
       /\{\{recipientName\}\}/g,
       this.escapeHtml(recipientName),
     );
+
+    // Compile MJML to HTML
+    const { html, errors } = mjml2html(mjmlContent);
+
+    if (errors && errors.length > 0) {
+      this.logger.warn('MJML compilation warnings:', errors);
+    }
+
+    return html;
+  }
+
+  /**
+   * Compile password changed MJML template
+   */
+  private compilePasswordChangedTemplate(recipientName: string): string {
+    const templatePath = path.join(this.templatesDir, 'password-changed.mjml');
+    let mjmlContent = fs.readFileSync(templatePath, 'utf-8');
+
+    // Get current time in Indonesian format
+    const changeTime = new Date().toLocaleString('id-ID', {
+      dateStyle: 'full',
+      timeStyle: 'short',
+      timeZone: 'Asia/Jakarta',
+    });
+
+    // Replace placeholders
+    mjmlContent = mjmlContent
+      .replace(/\{\{recipientName\}\}/g, this.escapeHtml(recipientName))
+      .replace(/\{\{changeTime\}\}/g, this.escapeHtml(changeTime));
+
+    // Compile MJML to HTML
+    const { html, errors } = mjml2html(mjmlContent);
+
+    if (errors && errors.length > 0) {
+      this.logger.warn('MJML compilation warnings:', errors);
+    }
+
+    return html;
+  }
+
+  /**
+   * Compile reset password MJML template
+   */
+  private compileResetPasswordTemplate(
+    recipientName: string,
+    resetLink: string,
+  ): string {
+    const templatePath = path.join(this.templatesDir, 'reset-password.mjml');
+    let mjmlContent = fs.readFileSync(templatePath, 'utf-8');
+
+    // Replace placeholders
+    mjmlContent = mjmlContent
+      .replace(/\{\{recipientName\}\}/g, this.escapeHtml(recipientName))
+      .replace(/\{\{resetLink\}\}/g, this.escapeHtml(resetLink));
 
     // Compile MJML to HTML
     const { html, errors } = mjml2html(mjmlContent);
