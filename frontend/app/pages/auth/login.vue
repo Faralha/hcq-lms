@@ -31,10 +31,16 @@
       </UForm>
 
       <!-- Footer -->
-      <div class="text-sm text-center text-muted mt-6">
-        Belum punya akun?
-        <NuxtLink to="/auth/register" class="text-primary-600 hover:underline">
-          Daftar di sini
+      <div class="items-center flex flex-col gap-3">
+        <div class="text-sm text-center text-muted">
+          Belum punya akun?
+          <NuxtLink to="/auth/register" class="text-primary-600 hover:underline">
+            Daftar di sini
+          </NuxtLink>
+        </div>
+
+        <NuxtLink to="/auth/reset-password" class="text-sm text-primary-600 hover:underline">
+          Lupa password
         </NuxtLink>
       </div>
 
@@ -73,7 +79,7 @@ const state = reactive({
 })
 
 const schema = z.object({
-  email: z.string().email('Email tidak valid'),
+  email: z.email('Email tidak valid'),
   password: z.string().min(6, 'Password minimal 6 karakter'),
   remember: z.boolean().optional(),
 })

@@ -76,11 +76,11 @@ export const useAuthApi = () => {
    * POST /v1/auth/forgot-password
    */
   const forgotPassword = async (
-    data: ForgotPasswordRequest
+    email: string
   ): Promise<ApiResponse<{ message: string }>> => {
     return api.post<ApiResponse<{ message: string }>>(
       "auth/forgot-password",
-      data
+      { email }
     );
   };
 
@@ -94,6 +94,18 @@ export const useAuthApi = () => {
     return api.post<ApiResponse<{ message: string }>>(
       "auth/reset-password",
       data
+    );
+  };
+
+  /**
+   * Validate reset password token
+   * GET /v1/auth/reset-password/:token/validate
+   */
+  const validateResetToken = async (
+    token: string
+  ): Promise<ApiResponse<{ valid: boolean }>> => {
+    return api.get<ApiResponse<{ valid: boolean }>>(
+      `auth/reset-password/${token}/validate`
     );
   };
 
@@ -166,7 +178,7 @@ export const useAuthApi = () => {
   };
 
   /**
-   * Change password
+   * Change password (authenticated user)
    * PATCH /v1/auth/change-password
    */
   const changePassword = async (
@@ -188,6 +200,7 @@ export const useAuthApi = () => {
     resendVerification,
     invitePengajar,
     validateInvitation,
+    validateResetToken,
     changePassword,
   };
 };
