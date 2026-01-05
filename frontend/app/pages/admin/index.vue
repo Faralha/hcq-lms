@@ -129,12 +129,12 @@ const menuItems: MenuItem[] = [
     icon: 'i-lucide-banknote',
     to: '/admin/personalia'
   },
-  {
-    label: 'Laporan',
-    description: 'Lihat Laporan',
-    icon: 'i-lucide-chart-no-axes-combined',
-    to: '/admin/laporan'
-  },
+  // {
+  //   label: 'Laporan',
+  //   description: 'Lihat Laporan',
+  //   icon: 'i-lucide-chart-no-axes-combined',
+  //   to: '/admin/laporan'
+  // },
   {
     label: 'Announcements',
     description: 'Atur Pengunguman',

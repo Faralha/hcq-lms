@@ -89,8 +89,7 @@ const items = computed<NavigationMenuItem[]>(() => {
   if (userRole.value === 'ADMIN') {
     menu.push({
       label: 'Bantuan',
-      to: '/admin/help',
-      active: route.path === '/admin/help'
+      to: 'https://drive.google.com/file/d/1DC-PEHWQY7bsMkD7Vdqzi8G2SWLslCFK/view?usp=sharing',
     })
   }
 
