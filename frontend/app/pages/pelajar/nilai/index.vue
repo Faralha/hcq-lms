@@ -39,7 +39,7 @@
 import { h } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import type { Kelas } from '~/composables/useKelasApi'
-import type { Nilai } from '~/types/entities'
+import type { Nilai, AcademicRemark } from '~/types/entities'
 
 interface MyNilai {
   kelas: Kelas
@@ -55,10 +55,12 @@ const toast = useToast()
 
 // Composables
 const { getMyNilai } = useNilaiApi()
+const { getMyAcademicRemarks } = useAcademicRemarkApi()
 
 // State
 const isLoadingNilai = ref(false)
 const myNilaiData = ref<MyNilai[]>([])
+const myRemarksData = ref<AcademicRemark[]>([])
 
 // Group nilai by semester
 const nilaiGroupedBySemester = computed(() => {
@@ -90,11 +92,17 @@ const nilaiGroupedBySemester = computed(() => {
     // Calculate final cumulative grade
     const nilaiKumulatif = totalBobot > 0 ? (totalNilai / totalBobot * 100) : 0
 
+    // Find matching academic remark
+    const remark = myRemarksData.value.find(
+      r => r.kelasId === myNilai.kelas.id && r.semesterId === myNilai.kelas.semesterId
+    )
+
     grouped[semesterName].tableData.push({
       no: grouped[semesterName].tableData.length + 1,
       kelasId: myNilai.kelas.id,
       mataPelajaran: mataPelajaranNama,
-      nilaiKumulatif: Math.round(nilaiKumulatif * 100) / 100
+      nilaiKumulatif: Math.round(nilaiKumulatif * 100) / 100,
+      catatan: remark?.catatan || null
     })
   })
 
@@ -144,7 +152,7 @@ const nilaiColumns = computed<TableColumn<any>[]>(() => {
     },
     {
       accessorKey: 'mataPelajaran',
-      header: 'Mata Pelajaran',
+      header: 'Program',
       cell: ({ row }) => h('div', { class: 'font-medium text-highlighted' }, row.getValue('mataPelajaran'))
     },
     {
@@ -152,7 +160,42 @@ const nilaiColumns = computed<TableColumn<any>[]>(() => {
       header: 'Nilai Kumulatif',
       cell: ({ row }) => {
         const nilai = row.getValue('nilaiKumulatif') as number
-        return h('div', { class: 'font-medium text-highlighted text-center' }, nilai.toFixed(2))
+        return h('div', { class: 'font-medium text-highlighted' }, nilai.toFixed(2))
+      }
+    },
+    {
+      accessorKey: 'catatan',
+      header: 'Catatan Pembelajaran',
+      cell: ({ row }) => {
+        const catatan = row.getValue('catatan') as string | null
+
+        if (!catatan) {
+          return h('div', { class: 'text-[--ui-text-muted] italic text-sm' }, 'Belum ada catatan')
+        }
+
+        return h(
+          resolveComponent('UPopover'),
+          { mode: 'hover' },
+          {
+            default: () => h(
+              resolveComponent('UButton'),
+              {
+                icon: 'i-lucide-file-text',
+                color: 'primary',
+                variant: 'outline',
+                size: 'lg',
+                label: 'Lihat Catatan'
+              }
+            ),
+            content: () => h(
+              'div',
+              { class: 'p-4 max-w-sm' },
+              [
+                h('p', { class: 'text-sm text-highlighted' }, catatan)
+              ]
+            )
+          }
+        )
       }
     }
   ]
@@ -177,8 +220,20 @@ async function fetchMyNilai() {
   }
 }
 
+// Fetch my academic remarks
+async function fetchMyRemarks() {
+  try {
+    const response = await getMyAcademicRemarks()
+    myRemarksData.value = response.data || []
+  } catch (error: any) {
+    console.error('Error fetching academic remarks:', error)
+    myRemarksData.value = []
+  }
+}
+
 // Lifecycle
 onMounted(() => {
   fetchMyNilai()
+  fetchMyRemarks()
 })
 </script>
