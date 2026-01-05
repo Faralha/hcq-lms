@@ -40,8 +40,8 @@ export class NilaiController {
     @Body() createKomponenDto: CreateKomponenNilaiDto,
     @Req() req: Request,
   ) {
-    const { userId } = this.getAuthUser(req);
-    return this.nilaiService.createKomponen(createKomponenDto, userId);
+    const { userId, role } = this.getAuthUser(req);
+    return this.nilaiService.createKomponen(createKomponenDto, userId, role);
   }
 
   @Get('komponen/kelas/:kelasId')
@@ -65,11 +65,15 @@ export class NilaiController {
     return this.nilaiService.updateKomponen(id, updateKomponenDto, userId);
   }
 
-  @Delete('komponen/:id')
+  @Delete('komponen/kelas/:kelasId/:id')
   @Roles(Role.PENGAJAR, Role.ADMIN)
-  deleteKomponen(@Param('id') id: string, @Req() req: Request) {
+  deleteKomponen(
+    @Param('kelasId') kelasId: string,
+    @Param('id') id: string,
+    @Req() req: Request,
+  ) {
     const { userId } = this.getAuthUser(req);
-    return this.nilaiService.deleteKomponen(id, userId);
+    return this.nilaiService.deleteKomponen(kelasId, id, userId);
   }
 
   // ==================== NILAI ====================
