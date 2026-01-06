@@ -22,17 +22,17 @@
       <UCard v-for="section in materiSections" :key="section.id">
         <div class="space-y-4">
           <!-- Section Header -->
-          <div class="flex items-start justify-between">
+          <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
             <div class="flex-1">
               <h3 class="text-lg font-semibold">{{ section.judul }}</h3>
               <p v-if="section.deskripsi" class="text-sm text-[--ui-text-muted] mt-1">{{ section.deskripsi }}</p>
             </div>
-            <div class="flex gap-2">
-              <UButton icon="i-lucide-edit" size="xs" color="primary" variant="ghost"
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-2 w-full md:w-auto">
+              <UButton icon="i-lucide-edit" label="Edit" size="lg" color="secondary" variant="solid"
                 @click="openEditSectionModal(section)" />
-              <UButton icon="i-lucide-upload" size="xs" color="primary" variant="outline"
+              <UButton icon="i-lucide-upload" label="Unggah Materi" size="lg" color="primary" variant="solid"
                 @click="openUploadModal(section.id)" />
-              <UButton icon="i-lucide-trash-2" size="xs" color="error" variant="ghost"
+              <UButton icon="i-lucide-trash-2" label="Hapus" size="lg" color="error" variant="solid"
                 @click="handleDeleteSection(section.id)" />
             </div>
           </div>
@@ -49,9 +49,9 @@
                 </div>
               </div>
               <div class="flex gap-2">
-                <UButton icon="i-lucide-download" size="xs" color="primary" variant="ghost"
+                <UButton icon="i-lucide-download" size="lg" color="primary" variant="outline"
                   @click="handleDownloadFile(file.id, file.filename)" />
-                <UButton icon="i-lucide-trash-2" size="xs" color="error" variant="ghost"
+                <UButton icon="i-lucide-trash-2" size="lg" color="error" variant="subtle"
                   @click="handleDeleteFile(file.id)" />
               </div>
             </div>
