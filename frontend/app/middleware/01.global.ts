@@ -16,12 +16,28 @@ export default defineNuxtRouteMiddleware((to) => {
     '/admin': ['admin'],
     '/pengajar': ['pengajar'],
     '/pelajar': ['pelajar'],
+    '/profile': ['auth'],
   }
 
   // Check if route matches any protected path
   for (const [path, middlewares] of Object.entries(routeMiddleware)) {
     if (to.path.startsWith(path)) {
       console.log(`[global] Route ${to.path} requires middleware:`, middlewares)
+      
+      // Run authentication check
+      if (middlewares.includes('auth')) {
+        const { user } = useAuth()
+        if (!user.value) {
+          const toast = useToast()
+          toast.add({
+            title: 'Akses Ditolak',
+            description: 'Silakan login terlebih dahulu',
+            color: 'error',
+            icon: 'i-lucide-lock',
+          })
+          return navigateTo('/auth/login')
+        }
+      }
       
       // Run role-based middleware
       if (middlewares.includes('admin')) {

@@ -16,6 +16,8 @@ export interface CreateKomponenRequest {
   bobot: number;
 }
 
+export interface EditKomponenRequest extends Partial<CreateKomponenRequest> {}
+
 export interface EntryNilaiRequest {
   komponenId: string;
   pelajarId: string;
@@ -67,6 +69,28 @@ export const useNilaiApi = () => {
   };
 
   /**
+   * Edit komponen nilai
+   * PATCH /nilai/komponen/:komponenId
+   */
+  const editKomponenByKelas = async (
+    komponenId: string,
+    data: EditKomponenRequest
+  ): Promise<ApiResponse<KomponenNilai>> => {
+    return api.patch(`nilai/komponen/${komponenId}`, data);
+  };
+
+  /**
+   * Delete komponen by kelas
+   * DELETE /nilai/komponen/kelas/:kelasId/:komponenId
+   */
+  const deleteKomponenByKelas = async (
+    kelasId: string,
+    komponenId: string
+  ): Promise<ApiResponse<{ message: string }>> => {
+    return api.delete(`nilai/komponen/kelas/${kelasId}/${komponenId}`);
+  };
+
+  /**
    * Entry nilai (Pengajar only)
    * POST /nilai/entry
    */
@@ -108,7 +132,9 @@ export const useNilaiApi = () => {
   return {
     createKomponen,
     getKomponenByKelas,
+    editKomponenByKelas,
     entryNilai,
+    deleteKomponenByKelas,
     updateNilai,
     getNilaiByKelas,
     getMyNilai,

@@ -144,12 +144,13 @@ const acceptedTypes = computed(() => props.accept || '*')
 const acceptedTypesLabel = computed(() => {
   if (!props.accept || props.accept === '*') return 'Semua jenis file'
 
-  const types = props.accept.split(',').map(t => t.trim())
-  if (types.some(t => t.includes('image'))) return 'Gambar (JPG, PNG, GIF)'
-  if (types.some(t => t.includes('pdf'))) return 'Dokumen PDF'
-  if (types.some(t => t.includes('video'))) return 'Video'
+  const types = props.accept
+    .split(',')
+    .map(t => t.trim())
+    .filter(Boolean)
 
-  return types.join(', ').toUpperCase()
+  const labels = Array.from(new Set(types.map(getAcceptLabel))).filter(Boolean)
+  return labels.length === 1 ? labels[0] : labels.join(', ')
 })
 
 // Methods
@@ -188,18 +189,25 @@ const addFiles = (files: File[]) => {
     const acceptedExtensions = props.accept
       .split(',')
       .map(t => t.trim().toLowerCase())
+      .filter(Boolean)
 
     const invalidFiles = files.filter(f => {
       const fileName = f.name.toLowerCase()
       const fileType = f.type.toLowerCase()
 
       return !acceptedExtensions.some(ext => {
-        if (ext.includes('*')) {
-          // Handle wildcards like 'image/*'
+        if (ext === '*') return true
+
+        if (ext.startsWith('.')) return fileName.endsWith(ext)
+
+        if (ext.endsWith('/*')) {
           const baseType = ext.split('/')[0]
-          return baseType ? fileType.startsWith(baseType) : false
+          return baseType ? fileType.startsWith(`${baseType}/`) : false
         }
-        return fileName.endsWith(ext.replace('.', ''))
+
+        if (ext.includes('/')) return fileType === ext
+
+        return fileName.endsWith(`.${ext}`) || fileType === ext
       })
     })
 
@@ -269,6 +277,23 @@ const uploadFiles = async () => {
 }
 
 // Utility functions
+function getAcceptLabel(type: string): string {
+  const normalized = type.toLowerCase()
+
+  if (normalized === '*') return 'Semua jenis file'
+  if (normalized.startsWith('.')) return normalized.replace('.', '').toUpperCase()
+  if (normalized.includes('image')) return 'Gambar'
+  if (normalized.includes('video')) return 'Video'
+  if (normalized.includes('audio')) return 'Audio'
+  if (normalized.includes('pdf')) return 'PDF'
+  if (normalized.includes('word') || normalized.includes('doc')) return 'Word'
+  if (normalized.includes('sheet') || normalized.includes('excel') || normalized.includes('spreadsheet')) return 'Spreadsheet'
+  if (normalized.includes('presentation') || normalized.includes('powerpoint') || normalized.includes('ppt')) return 'Presentasi'
+  if (normalized.includes('text') || normalized === 'txt') return 'TXT'
+
+  return normalized.toUpperCase()
+}
+
 const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 Bytes'
   const k = 1024

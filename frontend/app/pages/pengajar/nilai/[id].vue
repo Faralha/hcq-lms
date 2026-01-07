@@ -26,7 +26,7 @@ const UInput = resolveComponent('UInput')
 const UPopover = resolveComponent('UPopover')
 
 // API Composables
-const { getNilaiByKelas, createKomponen, entryNilai, updateNilai } = useNilaiApi()
+const { getNilaiByKelas, createKomponen, editKomponenByKelas, deleteKomponenByKelas, entryNilai, updateNilai } = useNilaiApi()
 const { getKelasById } = useKelasApi()
 const { getAcademicRemarksByKelas, createAcademicRemark, updateAcademicRemark } = useAcademicRemarkApi()
 const { getAllSemesters } = useSemesterApi()
@@ -37,12 +37,19 @@ const nilaiData = ref<KomponenWithNilai[]>([])
 const kelasData = ref<Kelas | null>(null)
 const remarksData = ref<AcademicRemark[]>([])
 const semesters = ref<any[]>([])
-const activeSemester = ref<any | null>(null)
+
+// Edit mode state - track which row is being edited
+const editingRowId = ref<string | null>(null)
+const editingRowValues = ref<{
+  nilaiMap: Map<string, number>
+  catatan: string
+  userId: string
+  remarkId?: string
+} | null>(null)
 
 // Modal states
 const isCreateKomponenModalOpen = ref(false)
-const isEditNilaiModalOpen = ref(false)
-const isEditRemarkModalOpen = ref(false)
+const isEditKomponenModalOpen = ref(false)
 
 // Validation schemas
 const komponenSchema = z.object({
@@ -53,26 +60,13 @@ const komponenSchema = z.object({
 
 type KomponenSchema = z.output<typeof komponenSchema>
 
-const nilaiSchema = z.object({
-  nilaiId: z.string().optional(),
+const editKomponenSchema = z.object({
   komponenId: z.string(),
-  pelajarId: z.string(),
-  nilai: z.number().min(0, 'Nilai minimal 0').max(100, 'Nilai maksimal 100'),
-  isNew: z.boolean()
+  nama: z.string().min(1, 'Nama komponen wajib diisi'),
+  bobot: z.number().min(1, 'Bobot minimal 1%').max(100, 'Bobot maksimal 100%')
 })
 
-type NilaiSchema = z.output<typeof nilaiSchema>
-
-const remarkSchema = z.object({
-  remarkId: z.string().optional(),
-  userId: z.string(),
-  kelasId: z.string(),
-  semesterId: z.string(),
-  catatan: z.string().min(1, 'Catatan wajib diisi'),
-  isNew: z.boolean()
-})
-
-type RemarkSchema = z.output<typeof remarkSchema>
+type EditKomponenSchema = z.output<typeof editKomponenSchema>
 
 // Forms
 const createKomponenForm = reactive<KomponenSchema>({
@@ -81,21 +75,10 @@ const createKomponenForm = reactive<KomponenSchema>({
   bobot: 0
 })
 
-const editNilaiForm = reactive<NilaiSchema>({
-  nilaiId: undefined,
+const editKomponenForm = reactive<EditKomponenSchema>({
   komponenId: '',
-  pelajarId: '',
-  nilai: 0,
-  isNew: true
-})
-
-const editRemarkForm = reactive<RemarkSchema>({
-  remarkId: undefined,
-  userId: '',
-  kelasId,
-  semesterId: '',
-  catatan: '',
-  isNew: true
+  nama: '',
+  bobot: 0
 })
 
 // Computed: merge enrolled students with nilai data
@@ -181,7 +164,29 @@ const columns = computed<TableColumn<any>[]>(() => {
           h('div', { class: 'text-xs text-muted font-normal' }, `Bobot: ${komponen.bobot}%`)
         ]),
         cell: ({ row }) => {
+          const isEditing = editingRowId.value === row.original.user.id
           const nilaiEntry = row.original.nilaiList.find((n: any) => n.komponenId === komponen.id)
+
+          if (isEditing && editingRowValues.value) {
+            const value = editingRowValues.value.nilaiMap.get(komponen.id) ?? nilaiEntry?.nilai ?? 0
+            return h('div', { class: 'text-center' },
+              h(UInput, {
+                modelValue: value,
+                'onUpdate:modelValue': (newVal: any) => {
+                  if (editingRowValues.value) {
+                    editingRowValues.value.nilaiMap.set(komponen.id, parseFloat(newVal) || 0)
+                  }
+                },
+                type: 'number',
+                size: 'sm',
+                min: 0,
+                max: 100,
+                step: '0.01',
+                class: 'text-center'
+              })
+            )
+          }
+
           const nilai = nilaiEntry?.nilai ?? '-'
           return h('div', { class: 'text-center text-highlighted' }, nilai.toString())
         },
@@ -199,8 +204,25 @@ const columns = computed<TableColumn<any>[]>(() => {
     id: 'remark',
     header: () => h('div', { class: 'text-center' }, 'Catatan Akademik'),
     cell: ({ row }) => {
+      const isEditing = editingRowId.value === row.original.user.id
       const remark = row.original.remark
       const hasCatatan = remark?.catatan && remark.catatan !== '-'
+
+      if (isEditing && editingRowValues.value) {
+        return h('div', { class: 'text-center' },
+          h(UInput, {
+            modelValue: editingRowValues.value.catatan,
+            'onUpdate:modelValue': (newVal: any) => {
+              if (editingRowValues.value) {
+                editingRowValues.value.catatan = newVal
+              }
+            },
+            type: 'text',
+            size: 'md',
+            placeholder: 'Masukkan catatan...'
+          })
+        )
+      }
 
       if (!hasCatatan) {
         return h('div', { class: 'text-center text-muted text-sm' }, '-')
@@ -235,42 +257,40 @@ const columns = computed<TableColumn<any>[]>(() => {
     id: 'actions',
     header: '',
     cell: ({ row }) => {
-      // Safe check for komponenList
-      if (!nilaiData.value || !Array.isArray(nilaiData.value) || nilaiData.value.length === 0) {
-        return h('div', { class: 'flex justify-end' }, '-')
-      }
-
-      const nilaiItems = nilaiData.value.map((komponen: KomponenWithNilai) => {
-        const nilaiEntry = row.original.nilaiList.find((n: any) => n.komponenId === komponen.id)
-        return {
-          label: `Edit ${komponen.nama}`,
-          icon: 'i-lucide-edit',
-          onSelect: () => openEditNilaiModal(row.original.user, komponen, nilaiEntry)
-        }
-      })
-
-      const remarkItem = {
-        label: row.original.remark ? 'Edit Catatan Akademik' : 'Tambah Catatan Akademik',
-        icon: 'i-lucide-message-square-text',
-        onSelect: () => openEditRemarkModal(row.original.user, row.original.remark)
-      }
-
-      const items = [nilaiItems, [remarkItem]]
+      const isEditing = editingRowId.value === row.original.user.id
 
       return h('div', { class: 'flex justify-end' },
-        h(UDropdownMenu, { items }, () =>
-          h(UButton, {
-            icon: 'i-lucide-more-vertical',
-            color: 'neutral',
-            variant: 'ghost',
-            size: 'sm'
+        isEditing
+          ? h('div', { class: 'flex gap-1' }, [
+            h(UButton, {
+              label: 'Simpan',
+              icon: 'i-lucide-save',
+              size: 'md',
+              color: 'success',
+              variant: 'solid',
+              onClick: () => handleSaveRowEdit(row.original.user.id)
+            }),
+            h(UButton, {
+              icon: 'i-lucide-x',
+              size: 'md',
+              color: 'error',
+              variant: 'solid',
+              onClick: () => cancelRowEdit()
+            })
+          ])
+          : h(UButton, {
+            label: 'Edit',
+            icon: 'i-lucide-edit',
+            size: 'md',
+            color: 'secondary',
+            variant: 'outline',
+            onClick: () => startRowEdit(row.original.user.id, row.original)
           })
-        )
       )
     },
     meta: {
       class: {
-        td: 'w-16'
+        td: 'w-32'
       }
     }
   })
@@ -339,10 +359,6 @@ async function fetchSemesters() {
     const response = await getAllSemesters()
     if (response.status === 200 && response.data) {
       semesters.value = response.data
-      // Set semester from kelas data (kelas is tied to a semester)
-      if (kelasData.value?.semesterId) {
-        editRemarkForm.semesterId = kelasData.value.semesterId
-      }
     }
   } catch (error) {
     console.error('Failed to fetch semesters:', error)
@@ -388,47 +404,32 @@ async function handleCreateKomponen() {
   }
 }
 
-// Handle nilai submission
-async function handleSubmitNilai() {
+// Edit komponen
+async function handleEditKomponen() {
   loading.value = true
   try {
-    let response
-
-    if (editNilaiForm.isNew) {
-      // Entry nilai baru
-      const entryData: EntryNilaiRequest = {
-        komponenId: editNilaiForm.komponenId,
-        pelajarId: editNilaiForm.pelajarId,
-        nilai: editNilaiForm.nilai
-      }
-      response = await entryNilai(entryData)
-    } else {
-      // Update nilai existing
-      if (!editNilaiForm.nilaiId) throw new Error('Nilai ID is required for update')
-
-      const updateData: UpdateNilaiRequest = {
-        nilai: editNilaiForm.nilai
-      }
-      response = await updateNilai(editNilaiForm.nilaiId, updateData)
-    }
+    const response = await editKomponenByKelas(editKomponenForm.komponenId, {
+      nama: editKomponenForm.nama,
+      bobot: editKomponenForm.bobot
+    })
 
     if (response.status !== 200 && response.status !== 201) {
-      throw new Error('Failed to submit nilai')
+      throw new Error('Failed to edit komponen')
     }
 
     useToast().add({
       title: 'Success',
-      description: editNilaiForm.isNew ? 'Nilai berhasil diinput' : 'Nilai berhasil diupdate',
+      description: 'Komponen penilaian berhasil diperbarui',
       color: 'success'
     })
 
-    isEditNilaiModalOpen.value = false
+    isEditKomponenModalOpen.value = false
     await fetchAllData()
   } catch (error) {
-    console.error('Failed to submit nilai:', error)
+    console.error('Failed to edit komponen:', error)
     useToast().add({
       title: 'Error',
-      description: 'Gagal menyimpan nilai',
+      description: 'Gagal memperbarui komponen penilaian',
       color: 'error'
     })
   } finally {
@@ -436,48 +437,136 @@ async function handleSubmitNilai() {
   }
 }
 
-// Handle remark submission
-async function handleSubmitRemark() {
+// Delete komponen
+async function handleDeleteKomponen(komponen: NilaiKomponen) {
+  const confirmed = confirm(`Apakah Anda yakin ingin menghapus komponen "${komponen.nama}"?`)
+  if (!confirmed) return
+
   loading.value = true
   try {
-    let response
-
-    if (editRemarkForm.isNew) {
-      // Create new remark
-      const createData: CreateAcademicRemarkRequest = {
-        userId: editRemarkForm.userId,
-        kelasId: editRemarkForm.kelasId,
-        semesterId: editRemarkForm.semesterId,
-        catatan: editRemarkForm.catatan
-      }
-      response = await createAcademicRemark(createData)
-    } else {
-      // Update existing remark
-      if (!editRemarkForm.remarkId) throw new Error('Remark ID is required for update')
-
-      const updateData: UpdateAcademicRemarkRequest = {
-        catatan: editRemarkForm.catatan
-      }
-      response = await updateAcademicRemark(editRemarkForm.remarkId, updateData)
-    }
+    const response = await deleteKomponenByKelas(kelasId, komponen.id)
 
     if (response.status !== 200 && response.status !== 201) {
-      throw new Error('Failed to submit remark')
+      throw new Error('Failed to delete komponen')
     }
 
     useToast().add({
       title: 'Success',
-      description: editRemarkForm.isNew ? 'Catatan akademik berhasil ditambahkan' : 'Catatan akademik berhasil diupdate',
+      description: 'Komponen penilaian berhasil dihapus',
       color: 'success'
     })
 
-    isEditRemarkModalOpen.value = false
     await fetchAllData()
   } catch (error) {
-    console.error('Failed to submit remark:', error)
+    console.error('Failed to delete komponen:', error)
     useToast().add({
       title: 'Error',
-      description: 'Gagal menyimpan catatan akademik',
+      description: 'Gagal menghapus komponen penilaian',
+      color: 'error'
+    })
+  } finally {
+    loading.value = false
+  }
+}
+
+// Row edit mode handlers
+function startRowEdit(userId: string, rowData: any) {
+  const nilaiMap = new Map<string, number>()
+
+  // Populate nilai map from current row data
+  rowData.nilaiList.forEach((nilai: any) => {
+    nilaiMap.set(nilai.komponenId, nilai.nilai)
+  })
+
+  editingRowId.value = userId
+  editingRowValues.value = {
+    nilaiMap,
+    catatan: rowData.remark?.catatan || '',
+    userId,
+    remarkId: rowData.remark?.id
+  }
+}
+
+function cancelRowEdit() {
+  editingRowId.value = null
+  editingRowValues.value = null
+}
+
+async function handleSaveRowEdit(userId: string) {
+  if (!editingRowValues.value) return
+
+  loading.value = true
+  try {
+    // Save all nilai changes
+    for (const [komponenId, nilai] of editingRowValues.value.nilaiMap.entries()) {
+      const nilaiEntry = pelajarListWithNilai.value
+        .find(row => row.user.id === userId)
+        ?.nilaiList.find(n => n.komponenId === komponenId)
+
+      if (nilaiEntry) {
+        // Update existing nilai
+        const updateData: UpdateNilaiRequest = { nilai }
+        const response = await updateNilai(nilaiEntry.id, updateData)
+        if (response.status !== 200 && response.status !== 201) {
+          throw new Error(`Failed to update nilai for komponen ${komponenId}`)
+        }
+      } else {
+        // Entry new nilai
+        const entryData: EntryNilaiRequest = {
+          komponenId,
+          pelajarId: userId,
+          nilai
+        }
+        const response = await entryNilai(entryData)
+        if (response.status !== 200 && response.status !== 201) {
+          throw new Error(`Failed to entry nilai for komponen ${komponenId}`)
+        }
+      }
+    }
+
+    // Save catatan akademik if changed
+    const currentRemark = pelajarListWithNilai.value
+      .find(row => row.user.id === userId)
+      ?.remark
+
+    if (editingRowValues.value.catatan && editingRowValues.value.catatan.trim()) {
+      if (currentRemark && editingRowValues.value.remarkId) {
+        // Update existing remark
+        const updateData: UpdateAcademicRemarkRequest = {
+          catatan: editingRowValues.value.catatan
+        }
+        const response = await updateAcademicRemark(editingRowValues.value.remarkId, updateData)
+        if (response.status !== 200 && response.status !== 201) {
+          throw new Error('Failed to update catatan akademik')
+        }
+      } else if (!currentRemark) {
+        // Create new remark
+        const createData: CreateAcademicRemarkRequest = {
+          userId,
+          kelasId,
+          semesterId: kelasData.value?.semesterId || '',
+          catatan: editingRowValues.value.catatan
+        }
+        const response = await createAcademicRemark(createData)
+        if (response.status !== 200 && response.status !== 201) {
+          throw new Error('Failed to create catatan akademik')
+        }
+      }
+    }
+
+    useToast().add({
+      title: 'Success',
+      description: 'Data siswa berhasil diperbarui',
+      color: 'success'
+    })
+
+    cancelRowEdit()
+    await fetchAllData()
+  } catch (error) {
+    console.error('Failed to save row edit:', error)
+    useToast().add({
+      title: 'Error',
+      description: 'Gagal menyimpan perubahan data siswa',
       color: 'error'
     })
   } finally {
@@ -491,23 +580,11 @@ function openCreateKomponenModal() {
   isCreateKomponenModalOpen.value = true
 }
 
-function openEditNilaiModal(user: User, komponen: NilaiKomponen, nilaiEntry?: any) {
-  editNilaiForm.nilaiId = nilaiEntry?.id
-  editNilaiForm.komponenId = komponen.id
-  editNilaiForm.pelajarId = user.id
-  editNilaiForm.nilai = nilaiEntry?.nilai ?? 0
-  editNilaiForm.isNew = !nilaiEntry
-  isEditNilaiModalOpen.value = true
-}
-
-function openEditRemarkModal(user: User, remark?: AcademicRemark) {
-  editRemarkForm.remarkId = remark?.id
-  editRemarkForm.userId = user.id
-  editRemarkForm.kelasId = kelasId
-  editRemarkForm.semesterId = remark?.semesterId || kelasData.value?.semesterId || ''
-  editRemarkForm.catatan = remark?.catatan || ''
-  editRemarkForm.isNew = !remark
-  isEditRemarkModalOpen.value = true
+function openEditKomponenModal(komponen: NilaiKomponen) {
+  editKomponenForm.komponenId = komponen.id
+  editKomponenForm.nama = komponen.nama
+  editKomponenForm.bobot = komponen.bobot
+  isEditKomponenModalOpen.value = true
 }
 
 function resetCreateKomponenForm() {
@@ -535,17 +612,25 @@ onMounted(() => {
         </p>
       </div>
 
-      <UButton label="Tambah Komponen Penilaian" icon="i-lucide-plus" @click="openCreateKomponenModal" />
+      <UButton label="Tambah Komponen Penilaian" size="lg" icon="i-lucide-plus" @click="openCreateKomponenModal" />
     </div>
 
     <!-- Komponen Info -->
     <div v-if="nilaiData?.length" class="flex gap-2 flex-wrap">
       <div v-for="komponen in nilaiData" :key="komponen.id"
         class="px-3 py-2 bg-elevated rounded-lg border border-default">
-        <div class="flex items-center gap-2">
-          <UIcon name="i-lucide-clipboard-list" class="size-4 text-primary" />
-          <span class="font-medium text-sm">{{ komponen.nama }}</span>
-          <span class="text-xs text-muted">{{ komponen.bobot }}%</span>
+        <div class="flex flex-col items-start gap-2">
+          <div class="flex items-center gap-2">
+            <UIcon name="i-lucide-clipboard-list" class="size-4 text-primary" />
+            <span class="font-medium text-sm">{{ komponen.nama }}</span>
+            <span class="text-xs text-muted">{{ komponen.bobot }}%</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <UButton label="Edit" icon="i-lucide-pencil" size="sm" color="secondary" variant="outline" square
+              @click="openEditKomponenModal(komponen)" />
+            <UButton label="Hapus" icon="i-lucide-trash-2" size="sm" color="error" variant="outline" square
+              @click="handleDeleteKomponen(komponen)" />
+          </div>
         </div>
       </div>
     </div>
@@ -555,7 +640,7 @@ onMounted(() => {
       class="text-center py-8 border border-dashed border-default rounded-lg">
       <UIcon name="i-lucide-clipboard-list" class="size-12 mx-auto text-muted mb-3" />
       <p class="text-muted mb-4">Belum ada komponen penilaian</p>
-      <UButton label="Tambah Komponen Penilaian" icon="i-lucide-plus" size="sm" @click="openCreateKomponenModal" />
+      <UButton label="Tambah Komponen Penilaian" icon="i-lucide-plus" size="lg" @click="openCreateKomponenModal" />
     </div>
 
     <!-- Table -->
@@ -603,66 +688,32 @@ onMounted(() => {
       </template>
     </UModal>
 
-    <!-- Edit Nilai Modal -->
-    <UModal v-model:open="isEditNilaiModalOpen">
+    <!-- Edit Komponen Modal -->
+    <UModal v-model:open="isEditKomponenModalOpen">
       <template #content>
         <UCard>
           <template #header>
-            <h3 class="text-lg font-semibold">
-              {{ editNilaiForm.isNew ? 'Input' : 'Edit' }} Nilai
-            </h3>
+            <h3 class="text-lg font-semibold">Edit Komponen Penilaian</h3>
           </template>
 
-          <UForm :schema="nilaiSchema" :state="editNilaiForm" @submit="handleSubmitNilai"
-            @keydown.ctrl.enter="handleSubmitNilai" @keydown.meta.enter="handleSubmitNilai" class="space-y-4">
-            <UFormField label="Nilai" name="nilai" required>
-              <UInput v-model.number="editNilaiForm.nilai" type="number" placeholder="Masukkan nilai (0-100)" min="0"
-                max="100" step="0.01" class="w-full" @keydown.enter="handleSubmitNilai" />
+          <UForm :schema="editKomponenSchema" :state="editKomponenForm" @submit="handleEditKomponen"
+            @keydown.ctrl.enter="handleEditKomponen" @keydown.meta.enter="handleEditKomponen" class="space-y-4">
+            <UFormField label="Nama Komponen" name="nama" required>
+              <UInput v-model="editKomponenForm.nama" placeholder="Contoh: UTS, UAS, Kuis 1" class="w-full"
+                @keydown.enter="handleEditKomponen" />
+            </UFormField>
+
+            <UFormField label="Bobot (%)" name="bobot" required>
+              <UInput v-model.number="editKomponenForm.bobot" type="number" placeholder="Contoh: 30" min="0" max="100"
+                class="w-full" @keydown.enter="handleEditKomponen" />
             </UFormField>
 
             <div class="w-full flex flex-col items-center gap-3 pt-4">
               <UButton class="w-full justify-center" type="submit" :loading="loading">
-                {{ editNilaiForm.isNew ? 'Simpan' : 'Update' }}
+                Simpan Perubahan
               </UButton>
               <UButton class="w-full justify-center" color="neutral" variant="outline"
-                @click="isEditNilaiModalOpen = false">
-                Batal
-              </UButton>
-            </div>
-          </UForm>
-        </UCard>
-      </template>
-    </UModal>
-
-    <!-- Edit Academic Remark Modal -->
-    <UModal v-model:open="isEditRemarkModalOpen">
-      <template #content>
-        <UCard>
-          <template #header>
-            <h3 class="text-lg font-semibold">
-              {{ editRemarkForm.isNew ? 'Tambah' : 'Edit' }} Catatan Akademik
-            </h3>
-          </template>
-
-          <UForm :schema="remarkSchema" :state="editRemarkForm" @submit="handleSubmitRemark"
-            @keydown.ctrl.enter="handleSubmitRemark" @keydown.meta.enter="handleSubmitRemark" class="space-y-4">
-            <UFormField label="Semester" name="semesterId" required>
-              <USelectMenu v-model="editRemarkForm.semesterId" :items="semesters" label-key="nama" value-key="id"
-                placeholder="Pilih semester" disabled class="w-full" />
-            </UFormField>
-
-            <UFormField label="Catatan" name="catatan" required>
-              <UTextarea v-model="editRemarkForm.catatan"
-                placeholder="Masukkan catatan akademik untuk siswa ini (Ctrl+Enter untuk submit)" :rows="5"
-                class="w-full" />
-            </UFormField>
-
-            <div class="w-full flex flex-col items-center gap-3 pt-4">
-              <UButton class="w-full justify-center" type="submit" :loading="loading">
-                {{ editRemarkForm.isNew ? 'Simpan' : 'Update' }}
-              </UButton>
-              <UButton class="w-full justify-center" color="neutral" variant="outline"
-                @click="isEditRemarkModalOpen = false">
+                @click="isEditKomponenModalOpen = false">
                 Batal
               </UButton>
             </div>

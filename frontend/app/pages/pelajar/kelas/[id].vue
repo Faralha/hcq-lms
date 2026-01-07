@@ -17,19 +17,13 @@
 
     <template v-else>
       <!-- Presensi Section -->
-      <div>
-        <PelajarKelasPresensi ref="presensiComponent" :kelas-id="kelasId" />
-      </div>
+      <PelajarKelasPresensi ref="presensiComponent" :kelas-id="kelasId" />
 
       <!-- Announcements Section -->
-      <div>
-        <PelajarKelasAnnouncement ref="announcementComponent" :kelas-id="kelasId" />
-      </div>
+      <PelajarKelasAnnouncement ref="announcementComponent" :kelas-id="kelasId" />
 
       <!-- Materi Section -->
-      <div>
-        <PelajarKelasMateri ref="materiComponent" :kelas-id="kelasId" />
-      </div>
+      <PelajarKelasMateri ref="materiComponent" :kelas-id="kelasId" />
 
       <!-- Nilai Section -->
       <div>

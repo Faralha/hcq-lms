@@ -8,7 +8,7 @@
 
     <!-- Tambah Kelas Modal -->
     <UModal v-model:open="isModalOpen">
-      <UButton label="Tambah Kelas" icon="i-lucide-school" />
+      <UButton label="Tambah Kelas" icon="i-lucide-school" @click="openCreateModal" />
 
       <template #content>
         <UCard>
@@ -25,9 +25,9 @@
               <USelect class="w-full" v-model="form.semesterId" :items="semesterOptions" placeholder="Pilih Semester" />
             </UFormField>
 
-            <UFormField label="Mata Pelajaran" name="mataPelajaranId" required>
+            <UFormField label="Program" name="mataPelajaranId" required>
               <USelect class="w-full" v-model="form.mataPelajaranId" :items="mataPelajaranOptions"
-                placeholder="Pilih Mata Pelajaran" />
+                placeholder="Pilih Program" />
             </UFormField>
 
             <UFormField label="Jadwal Hari" name="jadwalHari" required>
@@ -187,7 +187,7 @@ const schema = z.object({
   id: z.string().optional(),
   namaKelas: z.string().min(1, 'Nama kelas wajib diisi'),
   semesterId: z.string().min(1, 'Semester wajib dipilih'),
-  mataPelajaranId: z.string().min(1, 'Mata pelajaran wajib dipilih'),
+  mataPelajaranId: z.string().min(1, 'Program wajib dipilih'),
   jadwalHari: z.string().min(1, 'Jadwal hari wajib diisi'),
   jadwalJam: z.string().min(1, 'Jadwal jam wajib diisi')
 })
@@ -262,7 +262,7 @@ const columns: TableColumn<KelasType>[] = [
   },
   {
     accessorKey: 'mataPelajaran',
-    header: 'Mata Pelajaran',
+    header: 'Program',
     cell: ({ row }) => {
       const mp = row.original.mataPelajaran
       return mp ? h('span', { class: 'font-mono text-sm' }, `${mp.kode} - ${mp.nama}`) : '-'
