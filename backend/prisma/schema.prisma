@@ -104,6 +104,20 @@ model PengajarInvitation {
   @@map("pengajar_invitations")
 }
 
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  email     String
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([email])
+  @@index([token])
+  @@map("password_reset_tokens")
+}
+
 model Semester {
   id            String         @id @default(uuid())
   nama          String         @unique
