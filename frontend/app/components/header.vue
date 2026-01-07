@@ -97,19 +97,18 @@ const items = computed<NavigationMenuItem[]>(() => {
   if (userRole.value === 'PENGAJAR') {
     menu.push({
       label: 'Bantuan',
-      to: '/pengajar/help',
-      active: route.path === '/pengajar/help'
+      to: 'https://drive.google.com/file/d/1sqXV-ufER4vCsfhoDhT_JeiCVg-vsCPc/view?usp=sharing',
     })
   }
 
   // Pelajar menu items (match app/pages/pelajar/index.vue)
-  if (userRole.value === 'PELAJAR') {
-    menu.push({
-      label: 'Bantuan',
-      to: '/pelajar/help',
-      active: route.path === '/pelajar/help'
-    })
-  }
+  // if (userRole.value === 'PELAJAR') {
+  //   menu.push({
+  //     label: 'Bantuan',
+  //     to: '/pelajar/help',
+  //     active: route.path === '/pelajar/help'
+  //   })
+  // }
 
   // Authenticated user menu
   if (user.value) {
