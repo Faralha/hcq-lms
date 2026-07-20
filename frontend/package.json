@@ -20,7 +20,7 @@
     "@tanstack/vue-table": "^8.21.3",
     "idn-area-data": "^4.0.0",
     "motion-v": "^1.7.4",
-    "nuxt": "^4.2.0",
+    "nuxt": "^4.4.7",
     "pinia": "^3.0.4",
     "pinia-plugin-persistedstate": "^4.7.1",
     "tailwindcss": "^4.1.16",
