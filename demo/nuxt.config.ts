@@ -24,7 +24,21 @@ export default defineNuxtConfig({
     },
   },
 
+  typescript: {
+    tsConfig: {
+      compilerOptions: {
+        paths: {
+          "~/*": ["./app/*"],
+          "@/*": ["./app/*"],
+        },
+      },
+    },
+  },
+
   vite: {
+    resolve: {
+      preserveSymlinks: true,
+    },
     build: {
       minify: 'terser',
       terserOptions: {
