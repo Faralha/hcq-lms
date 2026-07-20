@@ -12,9 +12,9 @@ The seed file (`prisma/seed.ts`) contains default credentials for development:
 
 | Role     | Email            | Password    |
 | -------- | ---------------- | ----------- |
-| Admin    | admin@hcq.com    | admin123    |
-| Pengajar | pengajar@hcq.com | pengajar123 |
-| Pelajar  | pelajar@hcq.com  | pelajar123  |
+| Admin    | admin@hcq.com    | Set via `DEV_ADMIN_PASSWORD` |
+| Pengajar | pengajar@hcq.com | Set via `DEV_PENGAJAR_PASSWORD` |
+| Pelajar  | pelajar@hcq.com  | Set via `DEV_PELAJAR_PASSWORD` |
 
 **⚠️ WARNING**: These are ONLY for development and testing.
 

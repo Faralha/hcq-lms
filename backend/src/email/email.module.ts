@@ -31,7 +31,7 @@ import { EmailService } from './email.service';
           defaults: {
             from: configService.get<string>(
               'EMAIL_FROM',
-              '"No Reply" <noreply@hcq.com>',
+              '"No Reply" <noreply@example.com>',
             ),
           },
           template: {

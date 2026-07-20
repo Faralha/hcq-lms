@@ -8,7 +8,7 @@
   <mj-body background-color="#f4f4f4">
     <mj-section padding="20px 0">
       <mj-column>
-        <mj-image src="https://hcq.my.id/hcq.png" alt="HCQ" width="120px" />
+        <mj-image src="https://example.com/hcq.png" alt="HCQ" width="120px" />
       </mj-column>
     </mj-section>
 

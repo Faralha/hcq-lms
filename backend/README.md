@@ -102,7 +102,7 @@ pnpm run start:prod
 
 ```
 Development: http://localhost:4000/api/v1
-Production: https://api.hcq.com/api/v1 (coming soon)
+Production: https://api.example.com/api/v1
 ```
 
 ---
@@ -249,9 +249,9 @@ After running `pnpm prisma:seed`:
 
 | Role         | Email            | Password    | Access Level                  |
 | ------------ | ---------------- | ----------- | ----------------------------- |
-| **ADMIN**    | admin@hcq.com    | admin123    | Full system access            |
-| **PENGAJAR** | pengajar@hcq.com | pengajar123 | Manage kelas, presensi, nilai |
-| **PELAJAR**  | pelajar@hcq.com  | pelajar123  | View kelas, submit presensi   |
+| **ADMIN**    | admin@hcq.com    | Set via `DEV_ADMIN_PASSWORD` env var | Full system access            |
+| **PENGAJAR** | pengajar@hcq.com | Set via `DEV_PENGAJAR_PASSWORD` env var | Manage kelas, presensi, nilai |
+| **PELAJAR**  | pelajar@hcq.com  | Set via `DEV_PELAJAR_PASSWORD` env var | View kelas, submit presensi   |
 
 ---
 
@@ -270,7 +270,7 @@ pnpm run test:cov
 # Manual API testing
 curl -X POST http://localhost:4000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@hcq.com","password":"admin123"}'
+  -d '{"email":"admin@hcq.com","password":"<your-admin-password>"}'
 ```
 
 ---

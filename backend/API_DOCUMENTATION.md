@@ -91,7 +91,7 @@ curl http://localhost:3000/api/v1/auth/login
 ```json
 {
   "email": "admin@hcq.com",
-  "password": "admin123"
+  "password": "<your-admin-password>"
 }
 ```
 
@@ -748,9 +748,9 @@ After running `pnpm prisma:seed`:
 
 | Role         | Email            | Password    | Access                                  |
 | ------------ | ---------------- | ----------- | --------------------------------------- |
-| **ADMIN**    | admin@hcq.com    | admin123    | Full system access                      |
-| **PENGAJAR** | pengajar@hcq.com | pengajar123 | Manage kelas, presensi, nilai, materi   |
-| **PELAJAR**  | pelajar@hcq.com  | pelajar123  | View kelas, submit presensi, view nilai |
+| **ADMIN**    | admin@hcq.com    | Set via `DEV_ADMIN_PASSWORD` | Full system access                      |
+| **PENGAJAR** | pengajar@hcq.com | Set via `DEV_PENGAJAR_PASSWORD` | Manage kelas, presensi, nilai, materi   |
+| **PELAJAR**  | pelajar@hcq.com  | Set via `DEV_PELAJAR_PASSWORD` | View kelas, submit presensi, view nilai |
 
 ---
 
@@ -2859,7 +2859,7 @@ Authorization: Bearer <pengajar-token>
 # 1. Admin logs in
 curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@hcq.com","password":"admin123"}'
+  -d '{"email":"admin@hcq.com","password":"<your-admin-password>"}'
 
 # 2. Admin creates invitation for new teacher
 curl -X POST http://localhost:3000/api/v1/auth/invite-pengajar \
@@ -2916,7 +2916,7 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 # 1. Login as Admin
 curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@hcq.com","password":"admin123"}'
+  -d '{"email":"admin@hcq.com","password":"<your-admin-password>"}'
 
 # 2. Create Kelas
 curl -X POST http://localhost:3000/api/v1/kelas \
@@ -3018,7 +3018,7 @@ curl http://localhost:3000/api/v1/nilai/saya \
 # 1. User Logs In
 curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@hcq.com","password":"admin123"}'
+  -d '{"email":"admin@hcq.com","password":"<your-admin-password>"}'
 
 # Response includes both tokens:
 # {

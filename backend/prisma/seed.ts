@@ -9,7 +9,7 @@ async function main() {
   console.log('⚠️  CHANGE ALL PASSWORDS immediately in production!');
 
   // Create Admin User
-  const adminPassword = await argon2.hash('admin123');
+  const adminPassword = await argon2.hash(process.env.DEV_ADMIN_PASSWORD || 'admin123');
   const admin = await prisma.user.upsert({
     where: { email: 'admin@hcq.com' },
     update: {},
@@ -24,7 +24,7 @@ async function main() {
   console.log('✅ Admin created:', admin.email);
 
   // Create Sample Pengajar
-  const pengajarPassword = await argon2.hash('pengajar123');
+  const pengajarPassword = await argon2.hash(process.env.DEV_PENGAJAR_PASSWORD || 'pengajar123');
   const pengajar = await prisma.user.upsert({
     where: { email: 'pengajar@hcq.com' },
     update: {},
@@ -39,7 +39,7 @@ async function main() {
   console.log('✅ Pengajar created:', pengajar.email);
 
   // Create Sample Pelajar
-  const pelajarPassword = await argon2.hash('pelajar123');
+  const pelajarPassword = await argon2.hash(process.env.DEV_PELAJAR_PASSWORD || 'pelajar123');
   const pelajar = await prisma.user.upsert({
     where: { email: 'pelajar@hcq.com' },
     update: {},
@@ -176,10 +176,10 @@ async function main() {
   console.log('✅ 30 global announcements created');
 
   console.log('🎉 Seeding completed!');
-  console.log('\n📝 Default credentials:');
-  console.log('Admin: admin@hcq.com / admin123');
-  console.log('Pengajar: pengajar@hcq.com / pengajar123');
-  console.log('Pelajar: pelajar@hcq.com / pelajar123');
+  console.log('\n📝 Default credentials (set via DEV_ADMIN_PASSWORD, DEV_PENGAJAR_PASSWORD, DEV_PELAJAR_PASSWORD env vars):');
+  console.log('Admin: admin@hcq.com / ' + (process.env.DEV_ADMIN_PASSWORD || 'admin123'));
+  console.log('Pengajar: pengajar@hcq.com / ' + (process.env.DEV_PENGAJAR_PASSWORD || 'pengajar123'));
+  console.log('Pelajar: pelajar@hcq.com / ' + (process.env.DEV_PELAJAR_PASSWORD || 'pelajar123'));
 }
 
 main()
