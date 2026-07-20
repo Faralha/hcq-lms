@@ -1,0 +1,13 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3000
+      # Add your environment variables here
+      # - NUXT_PUBLIC_API_BASE=http://backend-api:8000
+    restart: unless-stopped
