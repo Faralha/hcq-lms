@@ -3,7 +3,7 @@
 FROM node:24-alpine AS base
 
 # Install pnpm globally
-RUN npm install -g pnpm
+RUN npm install -g pnpm@10
 
 # Set working directory
 WORKDIR /app
@@ -48,7 +48,7 @@ FROM node:24-alpine AS production
 RUN apk add --no-cache nano
 
 # Install pnpm globally
-RUN npm install -g pnpm
+RUN npm install -g pnpm@10
 
 # Set working directory
 WORKDIR /app

@@ -24,7 +24,7 @@
     "prisma:studio": "prisma studio",
     "prisma:seed": "ts-node prisma/seed.ts",
     "puppeteer:install": "puppeteer browsers install chrome",
-    "prepare": "husky",
+    "prepare": "husky || true",
     "seed:prod": "ts-node prisma/seed-prod.ts",
     "s3:init-rapor": "ts-node src/scripts/init-rapor-bucket.ts"
   },
@@ -94,6 +94,18 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@nestjs/core",
+      "@prisma/client",
+      "@prisma/engines",
+      "argon2",
+      "msgpackr-extract",
+      "prisma",
+      "unrs-resolver",
+      "@scarf/scarf"
+    ]
   },
   "jest": {
     "moduleFileExtensions": [
