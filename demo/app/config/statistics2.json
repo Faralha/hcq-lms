@@ -1,0 +1,23 @@
+[
+  { 
+    "id": "santri", 
+    "suffix": "+", 
+    "end": 1200, 
+    "label": "Santri terdaftar", 
+    "duration": 1.5 
+  },
+  { 
+    "id": "musyrifah", 
+    "suffix": "+", 
+    "end": 500, 
+    "label": "Musyrifah berpengalaman", 
+    "duration": 2 
+  },
+  { 
+    "id": "tahun", 
+    "suffix": "+", 
+    "end": 8, 
+    "label": "Tahun aktif", 
+    "duration": 2.5 
+  }
+]

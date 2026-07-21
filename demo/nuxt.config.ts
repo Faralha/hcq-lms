@@ -5,6 +5,10 @@ export default defineNuxtConfig({
   modules: ['@nuxt/ui', '@pinia/nuxt', '@nuxt/image', 'motion-v/nuxt'],
   css: ['~/assets/css/main.css'],
 
+  image: {
+    provider: 'static',
+  },
+
   ssr: false,
   colorMode: { preference: 'light' },
 
