@@ -1,3 +1,4 @@
+import { useAuthStore } from "~/stores/auth";
 import type { AuthUser } from "~/types/auth";
 
 /**

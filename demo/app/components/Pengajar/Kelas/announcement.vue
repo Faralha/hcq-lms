@@ -113,6 +113,7 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
 import { getPaginationRowModel } from '@tanstack/vue-table'
+import { useAuthStore } from '~/stores/auth'
 import type { TableColumn } from '@nuxt/ui'
 import type { Announcement, CreateAnnouncementRequest, UpdateAnnouncementRequest } from '~/composables/useAnnouncementApi'
 

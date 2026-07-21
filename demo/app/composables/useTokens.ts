@@ -1,3 +1,5 @@
+import { useAuthStore } from '../stores/auth'
+
 /**
  * Token Management Composable
  * Handles Access Token via Pinia store (persisted in localStorage)
