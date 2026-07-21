@@ -5,6 +5,10 @@ export default defineNuxtConfig({
   modules: ['@nuxt/ui', '@pinia/nuxt', '@nuxt/image', 'motion-v/nuxt'],
   css: ['~/assets/css/main.css'],
 
+  pinia: {
+    storesDirs: ['./app/stores/**'],
+  },
+
   image: {
     provider: 'static',
   },
@@ -36,6 +40,13 @@ export default defineNuxtConfig({
           "@/*": ["./app/*"],
         },
       },
+    },
+  },
+
+  runtimeConfig: {
+    public: {
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || '',
+      mockApi: process.env.NUXT_PUBLIC_MOCK_API || 'true',
     },
   },
 

@@ -41,6 +41,7 @@ jobs:
       - run: pnpm run generate
         env:
           NUXT_APP_BASE_URL: /
+          NUXT_PUBLIC_MOCK_API: 'true'
 
       - uses: actions/upload-pages-artifact@v3
         with:

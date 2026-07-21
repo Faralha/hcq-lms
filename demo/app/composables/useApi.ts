@@ -19,6 +19,11 @@ export const useApi = () => {
     endpoint: string,
     options: ApiRequestConfig = {}
   ): Promise<T> => {
+    const { public: { mockApi } } = config
+    if (mockApi === 'true') {
+      return useMockApi().request<T>(endpoint, options)
+    }
+
     const {
       method = "GET",
       body,

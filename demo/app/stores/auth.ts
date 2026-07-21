@@ -105,7 +105,7 @@ export const useAuthStore = defineStore("auth", {
   },
 
   persist: {
-    storage: import.meta.client ? localStorage : undefined,
+    storage: localStorage,
     paths: ["user", "accessToken"],
   },
 });
