@@ -20,7 +20,7 @@
     "pinia": "3.0.4",
     "pinia-plugin-persistedstate": "4.7.1",
     "tailwindcss": "4.3.3",
-    "vue": "3.5.24",
+    "vue": "^3.5.40",
     "vue-router": "4.6.3",
     "zod": "4.1.12"
   },
@@ -35,6 +35,7 @@
       "@parcel/watcher"
     ],
     "overrides": {
+      "vue": "^3.5.40",
       "tar": "^7.5.16",
       "picomatch": "^4.0.4",
       "minimatch": "^10.2.3",
